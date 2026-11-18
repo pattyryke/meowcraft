@@ -44,7 +44,7 @@ From then on, editing `meowcraft.json` on GitHub changes what everyone gets the 
 
 Get it on the Pi once:
 ```
-git clone https://github.com/YOUR-GITHUB-NAME/meowcraft ~/meowcraft
+git clone https://github.com/pattyryke/meowcraft ~/meowcraft
 ```
 Find your server's plugins folder (the long ID is your Crafty server):
 ```
