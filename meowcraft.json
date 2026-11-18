@@ -45,7 +45,10 @@
       { "name": "BlueMapFilteredEntities", "source": "github",   "repo": "TechnicJelle/BlueMapFilteredEntities", "asset": "\\.jar$", "jar": "^BlueMapFilteredEntities" },
       { "name": "Simple Voice Chat",       "source": "modrinth", "project": "simple-voice-chat",  "jar": "^voicechat" },
       { "name": "FetchPets",               "source": "modrinth", "project": "fetchpets",          "jar": "^fetchpets" },
-      { "name": "Chestsort+",              "source": "hangar",   "project": "chestsort",          "jar": "^chestsort" }
+      { "name": "Chestsort+",              "source": "hangar",   "project": "chestsort",          "jar": "^chestsort" },
+      { "name": "Emotecraft",              "source": "modrinth", "project": "emotecraft",         "jar": "^emotecraft" },
+      { "name": "ModularPacks",            "source": "modrinth", "project": "modularpacks",       "jar": "^ModularPacks" },
+      { "name": "GravesX",                 "source": "modrinth", "project": "gravesx",            "jar": "^GravesX" }
     ],
     "datapacks": [
       { "name": "Meowcraft Silly Stats", "source": "custom", "file": "meowcraft_stats.zip", "notes": "Copy of server/meowcraft_stats.zip in this repo - goes in world/datapacks" }
