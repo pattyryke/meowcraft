@@ -1,0 +1,1 @@
+https://raw.githubusercontent.com/YOUR-GITHUB-NAME/meowcraft/main/meowcraft.json

@@ -1,0 +1,54 @@
+{
+  "minecraft": "26.3",
+
+  "client": {
+    "core": {
+      "mods": [
+        "fabric-api",
+        "sodium",
+        "immediatelyfast",
+        "modmenu",
+        "xaeros-minimap",
+        "xaeros-world-map",
+        "jade",
+        "appleskin",
+        "mouse-tweaks",
+        "zoomify",
+        "simple-voice-chat"
+      ],
+      "resourcepacks": [],
+      "shaders": []
+    },
+    "fancy": {
+      "extends": "core",
+      "mods": ["iris", "entity-model-features", "entitytexturefeatures"],
+      "resourcepacks": ["fresh-animations"],
+      "shaders": [
+        { "project": "HVnmMxH1", "name": "Complementary Reimagined", "file": "Meowcraft High - Complementary Reimagined.zip" },
+        { "project": "Q1vvjJYV", "name": "BSL", "file": "Meowcraft Medium - BSL.zip" },
+        { "project": "makeup-ultra-fast-shaders", "name": "MakeUp Ultra Fast", "file": "Meowcraft Low - MakeUp Ultra Fast.zip" }
+      ],
+      "default_shader": "Meowcraft Low - MakeUp Ultra Fast.zip"
+    }
+  },
+
+  "server": {
+    "software": "Purpur",
+    "plugins": [
+      { "name": "LuckPerms",               "source": "modrinth", "project": "luckperms",          "jar": "^LuckPerms" },
+      { "name": "EssentialsX",             "source": "github",   "repo": "EssentialsX/Essentials", "asset": "^EssentialsX-[0-9].*\\.jar$",      "jar": "^EssentialsX-[0-9]" },
+      { "name": "EssentialsXChat",         "source": "github",   "repo": "EssentialsX/Essentials", "asset": "^EssentialsXChat-.*\\.jar$",      "jar": "^EssentialsXChat" },
+      { "name": "EssentialsXSpawn",        "source": "github",   "repo": "EssentialsX/Essentials", "asset": "^EssentialsXSpawn-.*\\.jar$",     "jar": "^EssentialsXSpawn" },
+      { "name": "Chunky",                  "source": "modrinth", "project": "chunky",             "jar": "^Chunky" },
+      { "name": "BlueMap",                 "source": "modrinth", "project": "bluemap",            "jar": "^bluemap" },
+      { "name": "BlueMapFilteredEntities", "source": "github",   "repo": "TechnicJelle/BlueMapFilteredEntities", "asset": "\\.jar$", "jar": "^BlueMapFilteredEntities" },
+      { "name": "Simple Voice Chat",       "source": "modrinth", "project": "simple-voice-chat",  "jar": "^voicechat" },
+      { "name": "FetchPets",               "source": "modrinth", "project": "fetchpets",          "jar": "^fetchpets" },
+      { "name": "Chestsort+",              "source": "hangar",   "project": "chestsort",          "jar": "^chestsort" }
+    ],
+    "datapacks": [
+      { "name": "Meowcraft Silly Stats", "source": "custom", "file": "meowcraft_stats.zip", "notes": "Copy of server/meowcraft_stats.zip in this repo - goes in world/datapacks" }
+    ],
+    "notes": "Spark is built into Purpur, so it isn't listed."
+  }
+}
