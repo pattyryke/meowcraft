@@ -7,5 +7,7 @@ $dir = Join-Path $HOME '.meowcraft'
 $tool = Join-Path $dir 'meowcraft-windows.ps1'
 New-Item -ItemType Directory -Force -Path $dir | Out-Null
 Write-Host '  =^.^=  Downloading Meowcraft...' -ForegroundColor Magenta
-Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/pattyryke/meowcraft/main/meowcraft-tools/meowcraft-windows.ps1' -OutFile $tool
+# The command comes from the "stable" branch (falls back to main until that branch exists)
+try { Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/pattyryke/meowcraft/stable/meowcraft-tools/meowcraft-windows.ps1' -OutFile $tool }
+catch { Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/pattyryke/meowcraft/main/meowcraft-tools/meowcraft-windows.ps1' -OutFile $tool }
 & (Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe') -NoProfile -ExecutionPolicy Bypass -File $tool install

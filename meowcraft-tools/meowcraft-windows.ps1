@@ -14,8 +14,11 @@ $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'   # makes downloads much faster in Windows PowerShell
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-$ToolVersion = '3.1'
-$RepoRaw = 'https://raw.githubusercontent.com/pattyryke/meowcraft/main'
+$ToolVersion = '3.2'
+$RepoRaw = 'https://raw.githubusercontent.com/pattyryke/meowcraft/main'     # the mod list + small files
+$ToolRaw = 'https://raw.githubusercontent.com/pattyryke/meowcraft/stable'   # this command: only updates when "stable" moves
+if ($env:MEOWCRAFT_REPO_RAW) { $RepoRaw = $env:MEOWCRAFT_REPO_RAW }   # for the GitHub tests
+if ($env:MEOWCRAFT_TOOL_RAW) { $ToolRaw = $env:MEOWCRAFT_TOOL_RAW }
 
 # ---- Built-in lists (only used on a first install if the online list can't be read) ----
 $McVersion          = '26.3'
@@ -79,10 +82,19 @@ function Get-Json($url) {
     $r = Invoke-RestMethod -Headers $Headers -Uri $url
     $out = @(); foreach ($x in $r) { $out += $x }; return ,$out
 }
-function Save-Url($url, $dest) {
-    # Download to a temp name first, so a cut-off download never looks finished
+function Test-Sha1($path, $sha1) {
+    if (-not $sha1) { return $true }   # nothing to check against
+    return ((Get-FileHash -Algorithm SHA1 -LiteralPath $path).Hash -eq ([string]$sha1).ToUpper())
+}
+function Save-Url($url, $dest, $sha1) {
+    # Download to a temp name first, so a cut-off download never looks finished.
+    # With $sha1 (from Modrinth), a damaged or tampered download is thrown away instead of used.
     $part = "$dest.part"
     Invoke-WebRequest -UseBasicParsing -Headers $Headers -Uri $url -OutFile $part
+    if (-not (Test-Sha1 $part $sha1)) {
+        Remove-Item -Force -ErrorAction SilentlyContinue $part
+        throw "The download of $(Split-Path -Leaf $dest) came out damaged - try again in a bit."
+    }
     Move-Item -Force $part $dest
 }
 function Get-Versions($project, $loader) {
@@ -191,7 +203,7 @@ function Require-Installed {
 # Newer copy of this command on GitHub? Returns its text, or $null if there isn't one (or no internet).
 function Get-NewerTool {
     $new = $null
-    try { $new = [string](Invoke-WebRequest -UseBasicParsing -TimeoutSec 15 -Headers $Headers -Uri "$RepoRaw/meowcraft-tools/meowcraft-windows.ps1").Content } catch { return $null }
+    try { $new = [string](Invoke-WebRequest -UseBasicParsing -TimeoutSec 15 -Headers $Headers -Uri "$ToolRaw/meowcraft-tools/meowcraft-windows.ps1").Content } catch { return $null }
     if (-not $new -or -not $new.Contains('MEOWCRAFT-TOOL-END')) { return $null }   # only use a complete file
     if ((Test-Path $ToolPath) -and $new -eq [IO.File]::ReadAllText($ToolPath)) { return $null }
     return $new
@@ -317,8 +329,8 @@ function Invoke-Sync([switch]$Quick) {
             if ($rel) { $chosen[$slugIds['sodium']] = $rel } else { $chosen[$slugIds['sodium']] = $sodiumOk[0] }
         }
     }
-    $want = [ordered]@{}   # filename -> url
-    foreach ($v in $chosen.Values) { $f = Get-PrimaryFile $v; $want[$f.filename] = $f.url }
+    $want = [ordered]@{}; $wantSha = @{}   # filename -> url, filename -> sha1
+    foreach ($v in $chosen.Values) { $f = Get-PrimaryFile $v; $want[$f.filename] = $f.url; $wantSha[$f.filename] = $f.hashes.sha1 }
 
     # 3. Sync the mods folder
     New-Item -ItemType Directory -Force -Path $ModsDir | Out-Null
@@ -332,8 +344,11 @@ function Invoke-Sync([switch]$Quick) {
     $changed = 0
     foreach ($name in $want.Keys) {
         $dest = Join-Path $ModsDir $name
-        if (Test-Path $dest) { continue }
-        Save-Url $want[$name] $dest
+        if (Test-Path $dest) {
+            if (Test-Sha1 $dest $wantSha[$name]) { continue }
+            Warn "$name is damaged - downloading it again"
+        }
+        Save-Url $want[$name] $dest $wantSha[$name]
         Say "Downloaded $name"; $changed++
     }
     [IO.File]::WriteAllLines($Owned, [string[]](@($want.Keys) + $keep), $Utf8)
@@ -356,7 +371,7 @@ function Invoke-Sync([switch]$Quick) {
         $f = Get-PrimaryFile $vs[0]
         $dest = Join-Path $PackDir "$rp.zip"
         if (-not ((Test-Path $dest) -and $dl["pack:$rp"] -eq $f.url)) {
-            Save-Url $f.url $dest; $dl["pack:$rp"] = $f.url
+            Save-Url $f.url $dest $f.hashes.sha1; $dl["pack:$rp"] = $f.url
             Set-PackEnabled "$rp.zip" $true
             Say "Installed resource pack $rp"
         }
@@ -376,7 +391,7 @@ function Invoke-Sync([switch]$Quick) {
             $f = Get-PrimaryFile (Pick-Version $vs $null)
             $dest = Join-Path $shDir $fname
             if (-not ((Test-Path $dest) -and $dl["shader:$fname"] -eq $f.url)) {
-                Save-Url $f.url $dest; $dl["shader:$fname"] = $f.url
+                Save-Url $f.url $dest $f.hashes.sha1; $dl["shader:$fname"] = $f.url
                 Say "Installed shader pack: $fname"
             }
         }
@@ -396,7 +411,7 @@ function Invoke-Sync([switch]$Quick) {
     # 5. Server list (only if they don't have one yet)
     $serversDat = Join-Path $GameDir 'servers.dat'
     if (-not (Test-Path $serversDat)) {
-        Save-Url "$RepoRaw/meowcraft-tools/zip-installer/servers.dat" $serversDat
+        Save-Url "$RepoRaw/meowcraft-tools/servers.dat" $serversDat
         Say 'Added Meowcraft to your server list'
     }
 
@@ -438,7 +453,10 @@ function Run-Sync([switch]$Quick) {
 function Install-Command {
     New-Item -ItemType Directory -Force -Path $ToolDir | Out-Null
     if ($PSCommandPath -and $PSCommandPath -ne $ToolPath) { Copy-Item -Force $PSCommandPath $ToolPath }
-    elseif (-not (Test-Path $ToolPath)) { Save-Url "$RepoRaw/meowcraft-tools/meowcraft-windows.ps1" $ToolPath }
+    elseif (-not (Test-Path $ToolPath)) {
+        try { Save-Url "$ToolRaw/meowcraft-tools/meowcraft-windows.ps1" $ToolPath }
+        catch { Save-Url "$RepoRaw/meowcraft-tools/meowcraft-windows.ps1" $ToolPath }   # no "stable" branch yet
+    }
     $shim = "@echo off`r`npowershell -NoProfile -ExecutionPolicy Bypass -File `"%~dp0meowcraft-windows.ps1`" %*`r`n"
     [IO.File]::WriteAllText($ShimPath, $shim, (New-Object System.Text.ASCIIEncoding))
     if (-not (Test-Path $IcoPath)) { try { Save-Url "$RepoRaw/meowcraft-tools/meowcraft.ico" $IcoPath } catch {} }

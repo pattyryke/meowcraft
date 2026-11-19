@@ -6,7 +6,7 @@ The master list for the Meowcraft server: every client mod, resource pack, shade
 | --- | --- |
 | `meowcraft.json` | **The master list.** Edit this to add or remove anything. Bump `"pack"` each time. |
 | `meowcraft-tools/` | The `meowcraft` command for friends' computers (Windows + Mac), plus the one-line setups. |
-| `meowcraft-tools/zip-installer/` | The old zip installers. Only `servers.dat` is still used; the rest can go once nobody uses the old zips. |
+| `meowcraft-tools/servers.dat` | The server list friends start with (just the Meowcraft server). |
 | `meowcraft-server-tools/meowcraft.py` | The `meowcraft` command for the Pi: checks and updates server plugins. |
 | `meowcraft-server-tools/datapacks/` | Backup copy of the silly stats datapack. |
 
@@ -39,7 +39,7 @@ The icon is all most people need. For everything else, type these in a new Power
 | `meowcraft switch normal` / `switch fancy` | Change versions |
 | `meowcraft reset` | Start the Meowcraft folder over with fresh mods. Worlds and screenshots are always kept. |
 | `meowcraft reset --keep_settings` | Same, but also keeps game settings + keybinds, mod settings, minimap waypoints and the server list |
-| `meowcraft upgrade` | Get the newest version of the `meowcraft` command itself (Windows asks about this on Play too) |
+| `meowcraft upgrade` | Windows only: get the newest version of the `meowcraft` command now (Play also offers it). Macs update it on their own. |
 | `meowcraft uninstall` | Remove the icon, the Launcher profile and the command (the game folder stays) |
 
 Reset moves everything it doesn't keep into `.minecraft/meowcraft-old` (Mac: `minecraft/meowcraft-old`) until the next reset, so nothing is lost by accident.
@@ -56,6 +56,18 @@ Everything lives in a `.meowcraft` folder in your home folder.
 
 Friends get it automatically the next time they click the icon. Anyone who forgets can still join, they just
 miss the new stuff. The Launcher profile shows the pack number (`Meowcraft · pack 5`), so it's easy to tell who's behind.
+
+## Changing the meowcraft command itself
+
+Friends' computers only pick up a new version of the `meowcraft` command when the **`stable`** branch moves,
+so half-finished changes on `main` never reach anyone. (The mod list, `meowcraft.json`, still comes straight from `main`.)
+
+1. Make the change on `main` (or a pull request) and add 0.1 to `$ToolVersion` / `TOOL_VERSION` at the top of the script.
+2. GitHub tests both commands automatically (the "Test the meowcraft command" check). Wait for the green ✓.
+3. Then send it to everyone: on GitHub, go to **Branches**, and update `stable` to match `main`, or on the Pi:
+   `git push origin main:stable`
+
+Windows asks friends before swapping in the new version (it runs from the next launch). Macs update quietly.
 
 ## Adding or removing things
 
