@@ -1,0 +1,582 @@
+#!/usr/bin/osascript -l JavaScript
+// Meowcraft for Mac  =^.^=
+//
+//   meowcraft install                 first-time setup: mods, server list, "Play Meowcraft" app in the Dock
+//   meowcraft play                    what the app runs: quick update check, then opens the Launcher
+//   meowcraft update                  check for new mods right now
+//   meowcraft switch normal|fancy     change versions
+//   meowcraft reset [--keep_settings] start the Meowcraft folder over (worlds and screenshots are always kept)
+//   meowcraft status                  what you have, and whether an update is waiting
+//   meowcraft uninstall               remove the app, the Launcher profile and this command
+//
+// Lives in ~/.meowcraft/meowcraft. Written in JavaScript for macOS (JXA), so it needs nothing installed.
+
+const TOOL_VERSION = '3.0';
+const IS_NODE = typeof process !== 'undefined' && !!(process.versions && process.versions.node);   // only for testing
+if (!IS_NODE) { ObjC.import('Foundation'); ObjC.import('stdlib'); }
+
+// ---- Built-in lists (only used on a first install if the online list can't be read) ----
+let MC_VERSION = '26.3';
+const CORE_MODS = ['fabric-api', 'sodium', 'immediatelyfast', 'modmenu', 'xaeros-minimap', 'xaeros-world-map', 'jade', 'appleskin', 'mouse-tweaks', 'zoomify', 'simple-voice-chat', 'emotecraft'];
+const FANCY_MODS = ['iris', 'entity-model-features', 'entitytexturefeatures'];
+const FANCY_PACKS = ['fresh-animations'];
+const FANCY_SHADERS = [['HVnmMxH1', 'Meowcraft High - Complementary Reimagined.zip'], ['Q1vvjJYV', 'Meowcraft Medium - BSL.zip'], ['makeup-ultra-fast-shaders', 'Meowcraft Low - MakeUp Ultra Fast.zip']];
+const FANCY_DEFAULT_SHADER = 'Meowcraft Low - MakeUp Ultra Fast.zip';
+const KNOWN_PACKS = ['fresh-animations'];
+// What "reset" always keeps, and what --keep_settings adds
+const ALWAYS_KEEP = ['saves', 'screenshots', '.meowcraft-variant'];
+const SETTINGS_KEEP = ['options.txt', 'config', 'xaero', 'XaeroWaypoints', 'XaeroWorldMap', 'servers.dat'];
+// -------------------------------------------------------------------------------------------
+
+const UA = 'Meowcraft/' + TOOL_VERSION + ' (github.com/pattyryke/meowcraft)';
+const ICON = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAABeElEQVR4Xu2aIW/CUBSFW8I0CRL01NwsAmpn+AMY5IIhm52cHeEnIPgDNbNgsPwBNJYEPbNg3rtNerP7wsrhJudTJWnKvZxzXm95zWfDVeaZlufiL7ABNG1ZwPbwVlvP6HEBqdNSDy2Exr0ClQxIdvNu+DhYxmw0nQfp+2oNp1qx3SvABtCoGeg8fIXadvP3RvOg+V7WkGVTZuAucR9iNQMa2v3hGuQ1U3GvABtAo2bg/BPXfguWucVyjsRSAy2Exr0C+VMvzv3XrMe3ZCCeDdwrwAbQmGahyXgU6twX3+H4efMSjtflNqmX/7omLYSGCqChAmjcK9DILFT9Pydime8tcBa6J9xnwDQLdcafST96v3itPf+4SdtrO5cff36vewXYABpTBiz0i7iPpnndck4qtBAa9wrk8n0hba9KknpPSEVb++X8I/eq3SvABtBUMiCx5KFpNN9LaCE07hVQM6Dl4ZZY3k1yrwAbQGN6HrB4EQUthMa9Ar+V1GApTOWmuAAAAABJRU5ErkJggg==';
+
+// ================================ platform helpers ================================
+
+let app = null, fm = null;
+if (!IS_NODE) { app = Application.currentApplication(); app.includeStandardAdditions = true; fm = $.NSFileManager.defaultManager; }
+
+function sh(cmd) {
+  if (IS_NODE) return require('child_process').execSync(cmd, { encoding: 'utf8', shell: '/bin/bash', stdio: ['ignore', 'pipe', 'pipe'] }).replace(/\n$/, '');
+  return app.doShellScript(cmd, { alteringLineEndings: false }).replace(/\n$/, '');
+}
+function shOk(cmd) { try { sh(cmd); return true; } catch (e) { return false; } }
+function q(s) { return "'" + String(s).replace(/'/g, "'\\''") + "'"; }
+function getenv(name) {
+  if (IS_NODE) return process.env[name] || '';
+  const v = $.NSProcessInfo.processInfo.environment.objectForKey(name);
+  return v.isNil() ? '' : ObjC.unwrap(v);
+}
+function exists(p) { return IS_NODE ? require('fs').existsSync(p) : fm.fileExistsAtPath(p); }
+function readText(p) { return IS_NODE ? require('fs').readFileSync(p, 'utf8') : sh('cat ' + q(p)); }
+function writeText(p, text) {
+  if (IS_NODE) { require('fs').writeFileSync(p, text); return; }
+  $.NSString.alloc.initWithUTF8String(text).writeToFileAtomicallyEncodingError(p, true, $.NSUTF8StringEncoding, null);
+}
+function quit(code) { if (IS_NODE) process.exit(code); $.exit(code); }
+// A pop-up with buttons. Returns the button clicked, or null if they closed it.
+function ask(text, buttons, def) {
+  if (IS_NODE) { const a = getenv('MEOWCRAFT_TEST_ANSWER'); return a || def; }
+  try { return app.displayDialog(text, { buttons: buttons, defaultButton: def, withTitle: 'Meowcraft =^.^=' }).buttonReturned; }
+  catch (e) { return null; }
+}
+function tell(text) { ask(text, ['OK'], 'OK'); }
+
+const HOME = getenv('HOME');
+const REPO_RAW = getenv('MEOWCRAFT_REPO_RAW') || 'https://raw.githubusercontent.com/pattyryke/meowcraft/main';
+const MODRINTH = getenv('MEOWCRAFT_MODRINTH') || 'https://api.modrinth.com';
+const FABRIC = getenv('MEOWCRAFT_FABRIC') || 'https://meta.fabricmc.net';
+const MC_DIR = HOME + '/Library/Application Support/minecraft';
+const GAME_DIR = MC_DIR + '/meowcraft';
+const OLD_DIR = MC_DIR + '/meowcraft-old';
+const MODS_DIR = GAME_DIR + '/mods';
+const PACK_DIR = GAME_DIR + '/resourcepacks';
+const OPT_FILE = GAME_DIR + '/options.txt';
+const OWNED = MODS_DIR + '/.meowcraft-owned';
+const VAR_FILE = GAME_DIR + '/.meowcraft-variant';
+const LIST_FILE = GAME_DIR + '/.meowcraft-list.json';
+const STAMP = GAME_DIR + '/.meowcraft-stamp';
+const DL_FILE = GAME_DIR + '/.meowcraft-downloads';
+const LP_PATH = MC_DIR + '/launcher_profiles.json';
+const TOOL_DIR = HOME + '/.meowcraft';
+const TOOL_PATH = TOOL_DIR + '/meowcraft';
+const LOG_FILE = TOOL_DIR + '/last-run.log';
+const APP_PATH = HOME + '/Applications/Play Meowcraft.app';
+const OLD_APP_DIR = HOME + '/Library/Application Support/Meowcraft';   // where version 2 kept its files
+
+function say(msg) { console.log('  =^.^=  ' + msg); }
+function info(msg) { console.log('         ' + msg); }
+function warn(msg) { console.log('  !!  ' + msg); }
+function header() { console.log('\n  =^.^=  Meowcraft  =^.^=\n'); }
+
+function getText(url) { return sh('curl -fsSL -m 30 -A ' + q(UA) + ' ' + q(url)); }
+function getJson(url) { return JSON.parse(getText(url)); }
+// Download to a temp name first, so a cut-off download never looks finished
+function download(url, dest) { sh('curl -fsSL -A ' + q(UA) + ' -o ' + q(dest + '.part') + ' ' + q(url) + ' && mv -f ' + q(dest + '.part') + ' ' + q(dest)); }
+function getVersions(project, loader) {
+  const qs = 'loaders=' + encodeURIComponent(JSON.stringify([loader])) + '&game_versions=' + encodeURIComponent(JSON.stringify([MC_VERSION]));
+  // A project that doesn't exist gives an empty list. Any other failure (Modrinth down, no internet)
+  // stops the update, so a hiccup can never make it look like every mod was removed.
+  let out = '';
+  try { out = sh('curl -sSL -m 30 -A ' + q(UA) + ' -w "\\n%{http_code}" ' + q(MODRINTH + '/v2/project/' + encodeURIComponent(project) + '/version?' + qs)); }
+  catch (e) { throw new Error("Couldn't reach Modrinth - try again in a bit."); }
+  const i = out.lastIndexOf('\n'), code = out.slice(i + 1).trim();
+  if (code === '404') return [];
+  if (code !== '200') throw new Error("Couldn't reach Modrinth (" + code + ') - try again in a bit.');
+  return JSON.parse(out.slice(0, i));
+}
+function primaryFile(v) { return v.files.find(f => f.primary) || v.files[0]; }
+function pickVersion(vs, pinId) {
+  if (pinId) { const p = vs.find(v => v.id === pinId); if (p) return p; }
+  return vs.find(v => v.version_type === 'release') || vs[0];
+}
+function readLines(p) { return exists(p) ? readText(p).split('\n').filter(Boolean) : []; }
+function hash(text) {   // small string fingerprint, only used to notice when the list changed
+  let h1 = 0x811c9dc5, h2 = 0;
+  for (let i = 0; i < text.length; i++) { const c = text.charCodeAt(i); h1 = Math.imul(h1 ^ c, 16777619) >>> 0; h2 = (h2 * 31 + c) >>> 0; }
+  return h1.toString(16) + '-' + h2.toString(16) + '-' + text.length;
+}
+function setPackEnabled(fileName, enabled) {
+  const entry = 'file/' + fileName;
+  let lines = exists(OPT_FILE) ? readText(OPT_FILE).split('\n') : [];
+  if (lines.length && lines[lines.length - 1] === '') lines.pop();
+  const idx = lines.findIndex(l => l.startsWith('resourcePacks:'));
+  let list = idx >= 0 ? JSON.parse(lines[idx].slice(14)) : ['vanilla'];
+  list = list.filter(x => x !== entry);
+  if (enabled) list.push(entry);
+  const line = 'resourcePacks:' + JSON.stringify(list);
+  if (idx >= 0) lines[idx] = line; else lines.push(line);
+  writeText(OPT_FILE, lines.join('\n') + '\n');
+}
+function getVariant() { return exists(VAR_FILE) && readText(VAR_FILE).trim().toLowerCase() === 'fancy' ? 'fancy' : 'core'; }
+function setVariant(v) { sh('mkdir -p ' + q(GAME_DIR)); writeText(VAR_FILE, v); }
+function variantName(v) { return v === 'fancy' ? 'Fancy' : 'Normal'; }
+
+// The [x] trick stops pgrep from finding the shell that's running pgrep itself
+function launcherRunning() { return shOk("pgrep -f '[/]Minecraft.app/Contents/MacOS/' >/dev/null"); }
+function gameRunning() { return shOk("pgrep -f '[A]pplication Support/minecraft/meowcraft' >/dev/null"); }
+function waitForClosedMinecraft() {
+  while (gameRunning() || launcherRunning()) {
+    if (ask('Please close Minecraft and the Minecraft Launcher, then click OK.', ['Cancel', 'OK'], 'OK') !== 'OK') quit(1);
+  }
+}
+function openLauncher() {
+  if (IS_NODE) { say('(test) would open the Minecraft Launcher'); return; }
+  if (shOk('open -a "Minecraft" 2>/dev/null || open -b com.mojang.minecraftlauncher 2>/dev/null || open -a "Minecraft Launcher"')) {
+    say('Opening the Minecraft Launcher - pick "Meowcraft" and press Play!');
+  } else warn("Couldn't find the Minecraft Launcher - please open it yourself and pick Meowcraft.");
+}
+function requireLauncher() {
+  if (exists(LP_PATH)) return;
+  console.log('  Open the Minecraft Launcher and log in once, close it, then try again.');
+  tell('Open the Minecraft Launcher and log in once, close it, then try again.');
+  quit(1);
+}
+function requireInstalled() {
+  if (exists(VAR_FILE)) return;
+  warn("Meowcraft isn't set up on this Mac yet. Run:  meowcraft install");
+  quit(1);
+}
+// Grab the newest copy of this command for next time (the Play app also does this before each run)
+function updateSelf() {
+  if (IS_NODE || !exists(TOOL_PATH)) return;
+  shOk('cd ' + q(TOOL_DIR) + ' && (curl -fsSL -m 15 ' + q(REPO_RAW + '/client/meowcraft-mac') + ' -o meowcraft.new && grep -q MEOWCRAFT-TOOL-END meowcraft.new && ' +
+       '(cmp -s meowcraft.new meowcraft || mv -f meowcraft.new meowcraft)); rm -f meowcraft.new; chmod +x meowcraft');
+}
+
+// ================================ the sync ================================
+// Makes the Meowcraft folder match meowcraft.json on GitHub. Only touches files it put there itself.
+// quick: skip everything if the list hasn't changed in the last 12 hours (used by the Play app).
+// Returns false if it couldn't check at all (no internet); throws if it started and something broke.
+function sync(quick) {
+  const variant = getVariant();
+  let manText = '', man = null;
+  try { manText = getText(REPO_RAW + '/meowcraft.json'); man = JSON.parse(manText); writeText(LIST_FILE, manText); }
+  catch (e) {
+    man = null;
+    if (!quick && exists(LIST_FILE)) {
+      warn("Couldn't read the mod list from GitHub - using the last good copy.");
+      try { manText = readText(LIST_FILE); man = JSON.parse(manText); } catch (e2) { man = null; }
+    }
+  }
+  if (!man && quick) return false;
+
+  let mods = CORE_MODS.slice(), packs = [], shaders = [], defaultShader = '', pack = null;
+  if (variant === 'fancy') { mods = mods.concat(FANCY_MODS); packs = FANCY_PACKS.slice(); shaders = FANCY_SHADERS.slice(); defaultShader = FANCY_DEFAULT_SHADER; }
+  if (man) {
+    const chain = [];
+    for (let cur = variant; cur; cur = (man.client[cur] || {}).extends) chain.unshift(cur);
+    mods = []; packs = []; shaders = []; defaultShader = '';
+    chain.forEach(c => {
+      const sec = man.client[c] || {};
+      (sec.mods || []).forEach(m => { if (mods.indexOf(m) < 0) mods.push(m); });
+      (sec.resourcepacks || []).forEach(p => { if (packs.indexOf(p) < 0) packs.push(p); });
+      (sec.shaders || []).forEach(s => shaders.push([s.project, s.file]));
+      if (sec.default_shader) defaultShader = sec.default_shader;
+    });
+    if (man.minecraft) MC_VERSION = man.minecraft;
+    if (man.pack) pack = man.pack;
+  } else warn("Couldn't read the online mod list - using the built-in one");
+  const packText = pack ? ' · pack ' + pack : '';
+  say(variantName(variant) + ' version, Minecraft ' + MC_VERSION + packText);
+
+  // Quick start: nothing changed since the last check a little while ago
+  const sig = hash(variant + '|' + manText);
+  if (quick && exists(STAMP)) {
+    let st = null; try { st = JSON.parse(readText(STAMP)); } catch (e) {}
+    const fresh = st && st.sig === sig && (Date.now() - st.time) < 12 * 3600 * 1000;
+    const allThere = readLines(OWNED).every(f => exists(MODS_DIR + '/' + f));
+    if (fresh && allThere) { say('Everything is up to date.'); return true; }
+  }
+
+  // 1. Fabric loader (same files the official Fabric installer writes)
+  say('Checking the Fabric loader for Minecraft ' + MC_VERSION + '...');
+  const loaders = getJson(FABRIC + '/v2/versions/loader/' + MC_VERSION);
+  if (!loaders.length) throw new Error("Fabric doesn't support Minecraft " + MC_VERSION + ' yet.');
+  const loader = loaders.find(l => l.loader.stable) || loaders[0];
+  const profileText = getText(FABRIC + '/v2/versions/loader/' + MC_VERSION + '/' + loader.loader.version + '/profile/json');
+  const versionId = JSON.parse(profileText).id;
+  const verDir = MC_DIR + '/versions/' + versionId;
+  sh('mkdir -p ' + q(verDir));
+  writeText(verDir + '/' + versionId + '.json', profileText);
+  if (!exists(verDir + '/' + versionId + '.jar')) sh('touch ' + q(verDir + '/' + versionId + '.jar'));
+
+  // 2. Work out the mod list, including required dependencies.
+  //    Prefers stable releases over betas, and honors exact versions that other mods ask for.
+  say('Checking mods...');
+  const seen = {}, chosen = {}, pins = {}, allVs = {}, slugIds = {};
+  const queue = mods.slice();
+  while (queue.length) {
+    const p = queue.shift();
+    if (seen[p]) continue;
+    seen[p] = true;
+    const vs = getVersions(p, 'fabric');
+    if (!vs.length) { warn(p + ' has no Fabric build for ' + MC_VERSION + ' yet - skipping'); continue; }
+    const projId = vs[0].project_id;
+    if (chosen[projId]) continue;
+    seen[projId] = true;
+    const v = pickVersion(vs, pins[projId]);
+    chosen[projId] = v; allVs[projId] = vs; slugIds[p] = projId;
+    (v.dependencies || []).forEach(d => {
+      if (d.dependency_type !== 'required') return;
+      let depProj = d.project_id;
+      if (d.version_id) {
+        const pv = getJson(MODRINTH + '/v2/version/' + d.version_id);
+        depProj = pv.project_id;
+        pins[depProj] = d.version_id;
+        if (chosen[depProj] && chosen[depProj].id !== d.version_id) chosen[depProj] = pv;
+      }
+      if (depProj) queue.push(depProj);
+    });
+  }
+  // Sodium often ships betas that the current Iris doesn't support yet.
+  // If both are present, use the newest Sodium that came out before the chosen Iris.
+  if (slugIds.iris && slugIds.sodium && !pins[slugIds.sodium]) {
+    const irisDate = new Date(chosen[slugIds.iris].date_published);
+    const ok = allVs[slugIds.sodium].filter(v => new Date(v.date_published) <= irisDate);
+    if (ok.length) chosen[slugIds.sodium] = ok.find(v => v.version_type === 'release') || ok[0];
+  }
+  const want = {};   // filename -> url
+  Object.keys(chosen).forEach(k => { const f = primaryFile(chosen[k]); want[f.filename] = f.url; });
+
+  // 3. Sync the mods folder
+  sh('mkdir -p ' + q(MODS_DIR));
+  const keep = [];   // old files we couldn't delete yet - try again next time
+  readLines(OWNED).forEach(old => {
+    if (old in want) return;
+    shOk('rm -f ' + q(MODS_DIR + '/' + old));
+    if (exists(MODS_DIR + '/' + old)) { keep.push(old); warn("Couldn't remove " + old + ' yet'); } else say('Removed ' + old);
+  });
+  let changed = 0;
+  Object.keys(want).forEach(name => {
+    const dest = MODS_DIR + '/' + name;
+    if (exists(dest)) return;
+    download(want[name], dest);
+    say('Downloaded ' + name); changed++;
+  });
+  writeText(OWNED, Object.keys(want).concat(keep).join('\n') + '\n');
+  if (!changed) say('Mods are up to date.');
+
+  // Remembers which pack/shader download each file came from, so they're only downloaded when they change
+  const dl = {};
+  readLines(DL_FILE).forEach(l => { const i = l.indexOf('|'); if (i > 0) dl[l.slice(0, i)] = l.slice(i + 1); });
+
+  // 4. Resource packs
+  sh('mkdir -p ' + q(PACK_DIR));
+  KNOWN_PACKS.forEach(p => {
+    if (packs.indexOf(p) < 0 && exists(PACK_DIR + '/' + p + '.zip')) {
+      sh('rm -f ' + q(PACK_DIR + '/' + p + '.zip')); setPackEnabled(p + '.zip', false); say('Removed resource pack ' + p);
+    }
+  });
+  packs.forEach(p => {
+    const vs = getVersions(p, 'minecraft');
+    if (!vs.length) { warn(p + ' has no version for ' + MC_VERSION + ' yet - skipping'); return; }
+    const url = primaryFile(vs[0]).url, dest = PACK_DIR + '/' + p + '.zip';
+    if (exists(dest) && dl['pack:' + p] === url) return;
+    download(url, dest); dl['pack:' + p] = url;
+    setPackEnabled(p + '.zip', true);
+    say('Installed resource pack ' + p);
+  });
+
+  // 4b. Shader packs (Iris)
+  if (shaders.length) {
+    const shDir = GAME_DIR + '/shaderpacks';
+    sh('mkdir -p ' + q(shDir));
+    shaders.forEach(([slug, fname]) => {
+      let vs = getVersions(slug, 'iris');
+      if (!vs.length) {   // shader packs usually work across versions, so fall back to the newest one
+        try { vs = getJson(MODRINTH + '/v2/project/' + slug + '/version?loaders=' + encodeURIComponent('["iris"]')); } catch (e) { vs = []; }
+      }
+      if (!vs.length) { warn("Couldn't find shader pack " + slug + ' - skipping'); return; }
+      const url = primaryFile(pickVersion(vs, null)).url, dest = shDir + '/' + fname;
+      if (exists(dest) && dl['shader:' + fname] === url) return;
+      download(url, dest); dl['shader:' + fname] = url;
+      say('Installed shader pack: ' + fname);
+    });
+    const cfgDir = GAME_DIR + '/config';
+    sh('mkdir -p ' + q(cfgDir));
+    const irisCfg = cfgDir + '/iris.properties';
+    let lines = exists(irisCfg) ? readText(irisCfg).split('\n').filter(l => l !== '') : [];
+    if (!lines.some(l => /^shaderPack=.+/.test(l))) {
+      lines = lines.filter(l => !/^(shaderPack|enableShaders)=/.test(l));
+      lines.push('shaderPack=' + defaultShader, 'enableShaders=true');
+      writeText(irisCfg, lines.join('\n') + '\n');
+      say('Turned on shaders: ' + defaultShader);
+    }
+  }
+  writeText(DL_FILE, Object.keys(dl).map(k => k + '|' + dl[k]).join('\n') + '\n');
+
+  // 5. Server list (only if they don't have one yet)
+  if (!exists(GAME_DIR + '/servers.dat')) {
+    download(REPO_RAW + '/installer/servers.dat', GAME_DIR + '/servers.dat');
+    say('Added Meowcraft to your server list');
+  }
+
+  // 6. Launcher profile (skipped if the Launcher is open, since it would overwrite our change)
+  if (launcherRunning()) warn('The Minecraft Launcher is open, so the profile will update next time.');
+  else {
+    sh('cp ' + q(LP_PATH) + ' ' + q(LP_PATH + '.meowcraft-backup'));
+    const lp = JSON.parse(readText(LP_PATH));
+    lp.profiles = lp.profiles || {};
+    const now = new Date().toISOString();
+    const created = (lp.profiles.meowcraft && lp.profiles.meowcraft.created) || now;
+    lp.profiles.meowcraft = { name: 'Meowcraft' + packText, type: 'custom', created: created, lastUsed: now, lastVersionId: versionId, gameDir: GAME_DIR, icon: ICON };
+    writeText(LP_PATH, JSON.stringify(lp, null, 2));
+  }
+  writeText(STAMP, JSON.stringify({ sig: sig, time: Date.now() }));
+  return true;
+}
+
+// Runs the sync and explains any problem. Returns true (done), false (couldn't check) or null (broke).
+function runSync(quick) {
+  try { return sync(quick); }
+  catch (e) {
+    console.log('\n  Something went wrong while updating: ' + (e.message || e));
+    console.log('  Take a picture of this window and send it to Patrick.\n');
+    return null;
+  }
+}
+
+// ================================ setup pieces ================================
+
+function installCommand() {
+  sh('mkdir -p ' + q(TOOL_DIR));
+  if (!IS_NODE && !exists(TOOL_PATH)) download(REPO_RAW + '/client/meowcraft-mac', TOOL_PATH);
+  if (exists(TOOL_PATH)) sh('chmod +x ' + q(TOOL_PATH));
+  // Let "meowcraft" work in any new Terminal window (zsh is the Mac default; bash just in case)
+  const line = 'export PATH="$HOME/.meowcraft:$PATH"   # Meowcraft';
+  ['.zprofile', '.bash_profile'].forEach(f => {
+    const p = HOME + '/' + f;
+    if (!(exists(p) && readText(p).indexOf('.meowcraft:') >= 0)) sh('printf %s\\\\n ' + q(line) + ' >> ' + q(p));
+  });
+}
+function makeApp() {
+  if (IS_NODE) { say('(test) would make the Play Meowcraft app'); return; }
+  if (exists(OLD_APP_DIR)) shOk('rm -rf ' + q(OLD_APP_DIR));   // version 2 leftovers
+  const icns = TOOL_DIR + '/meowcraft.icns';
+  if (!exists(icns)) shOk('curl -fsSL -m 20 -o ' + q(icns) + ' ' + q(REPO_RAW + '/client/meowcraft.icns'));
+  const refresh = 'cd ~/.meowcraft && (curl -fsSL -m 15 ' + q(REPO_RAW + '/client/meowcraft-mac') +
+    ' -o meowcraft.new && grep -q MEOWCRAFT-TOOL-END meowcraft.new && mv -f meowcraft.new meowcraft); rm -f meowcraft.new; chmod +x meowcraft';
+  const asText = (s) => '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+  const script = [
+    'set progress total steps to -1',
+    'set progress description to "Checking for Meowcraft updates..."',
+    'try',
+    '\tdo shell script ' + asText(refresh),
+    'end try',
+    'try',
+    '\tdo shell script "~/.meowcraft/meowcraft play --from_app > ~/.meowcraft/last-run.log 2>&1"',
+    'on error',
+    '\tdisplay dialog "Meowcraft couldn\'t finish updating, but Minecraft will still open." & return & return & "If something looks wrong, send Patrick the file last-run.log from the .meowcraft folder in your home folder." buttons {"OK"} default button "OK" with title "Meowcraft =^.^="',
+    '\ttry',
+    '\t\tdo shell script "open -a Minecraft || open -b com.mojang.minecraftlauncher"',
+    '\tend try',
+    'end try',
+    ''
+  ].join('\n');
+  const asFile = TOOL_DIR + '/Play Meowcraft.applescript';
+  writeText(asFile, script);
+  sh('mkdir -p ' + q(HOME + '/Applications') + ' && rm -rf ' + q(APP_PATH) + ' && osacompile -o ' + q(APP_PATH) + ' ' + q(asFile));
+  if (exists(icns)) {
+    const res = APP_PATH + '/Contents/Resources';
+    shOk('cp -f ' + q(icns) + ' ' + q(res + '/applet.icns'));
+    shOk('rm -f ' + q(res + '/Assets.car'));
+    shOk('/usr/libexec/PlistBuddy -c "Delete :CFBundleIconName" ' + q(APP_PATH + '/Contents/Info.plist'));
+    shOk('codesign --force --deep -s - ' + q(APP_PATH));
+    shOk('touch ' + q(APP_PATH));
+  }
+  say('Made the "Play Meowcraft" app');
+  // Put it in the Dock (once)
+  let dock = '';
+  try { dock = sh('defaults read com.apple.dock persistent-apps'); } catch (e) {}
+  if (dock.indexOf('Play%20Meowcraft.app') < 0) {
+    const url = 'file://' + encodeURI(APP_PATH) + '/';
+    const tile = '<dict><key>tile-data</key><dict><key>file-data</key><dict><key>_CFURLString</key><string>' + url +
+      '</string><key>_CFURLStringType</key><integer>15</integer></dict></dict></dict>';
+    if (shOk('defaults write com.apple.dock persistent-apps -array-add ' + q(tile) + ' && killall Dock')) say('Added "Play Meowcraft" to your Dock');
+  }
+}
+function chooseVariant(flags) {
+  if (flags.fancy) return 'fancy';
+  if (flags.normal || flags.core) return 'core';
+  const r = ask('Which version of Meowcraft do you want?\n\nNormal: fast and smooth on any Mac. Pick this if you are not sure.\n\nFancy: shaders and smoother animations. Needs a powerful Mac.\n\n(You can switch later: meowcraft switch normal / fancy)',
+    ['Fancy', 'Normal'], 'Normal');
+  if (r === null) quit(1);
+  return r === 'Fancy' ? 'fancy' : 'core';
+}
+
+// ================================ commands ================================
+
+function cmdInstall(flags) {
+  header();
+  requireLauncher();
+  waitForClosedMinecraft();
+  installCommand();
+  setVariant(chooseVariant(flags));
+  if (runSync(false) === null) quit(1);
+  makeApp();
+  console.log('\n  All done!  From now on, just click the cat "Play Meowcraft" icon in your Dock.');
+  console.log('  It keeps your mods up to date and opens the Launcher - pick Meowcraft and press Play.');
+  console.log('  In game: Multiplayer -> Meowcraft is already in your list. V = voice chat, B = emotes.\n');
+  tell('All done! =^.^=\n\nFrom now on, just click the cat "Play Meowcraft" icon in your Dock. It keeps your mods up to date and opens Minecraft.');
+}
+
+function cmdPlay(flags) {
+  if (!flags.from_app) updateSelf();
+  header();
+  requireLauncher();
+  requireInstalled();
+  if (gameRunning()) { say('Minecraft is already running - no updates while you play.'); openLauncher(); return; }
+  const r = runSync(true);
+  if (r === false) warn("Couldn't check for updates (no internet, or a typo in the mod list on GitHub). Playing with what you have.");
+  openLauncher();
+  if (r === null) quit(1);   // the Play app shows a message for this
+}
+
+function cmdUpdate() {
+  updateSelf();
+  header();
+  requireLauncher();
+  requireInstalled();
+  if (gameRunning()) { warn('Minecraft is running - close it first, then try again.'); quit(1); }
+  if (runSync(false)) console.log("\n  You're up to date. =^.^=\n"); else quit(1);
+}
+
+function cmdSwitch(words) {
+  let to = (words[1] || '').toLowerCase();
+  if (to === 'normal' || to === 'core') to = 'core';
+  else if (to !== 'fancy') { console.log('  Use:  meowcraft switch normal   or   meowcraft switch fancy'); quit(1); }
+  header();
+  requireLauncher();
+  requireInstalled();
+  waitForClosedMinecraft();
+  setVariant(to);
+  say('Switching to ' + variantName(to) + '...');
+  if (runSync(false)) console.log("\n  Done - you're on " + variantName(to) + ' now.\n'); else quit(1);
+}
+
+function cmdReset(flags) {
+  const keepSettings = !!flags.keep_settings;
+  header();
+  requireLauncher();
+  requireInstalled();
+  waitForClosedMinecraft();
+  const what = 'This starts your Meowcraft folder over with a fresh copy of every mod.\n\nAlways kept: your worlds and screenshots.\n\n' +
+    (keepSettings ? 'Also kept: game settings + keybinds, mod settings, minimap waypoints and your server list.'
+                  : 'Game settings, keybinds, mod settings, minimap waypoints and the server list go back to default. (Use --keep_settings to keep them.)') +
+    '\n\nEverything else is moved to a "meowcraft-old" folder, in case you need something back.';
+  console.log('  ' + what.split('\n\n').join('\n  '));
+  if (!flags.yes && ask(what, ['Cancel', 'Reset'], 'Cancel') !== 'Reset') { console.log('  Nothing changed.'); return; }
+  sh('rm -rf ' + q(OLD_DIR));
+  if (!shOk('mv ' + q(GAME_DIR) + ' ' + q(OLD_DIR))) { warn("Couldn't move the Meowcraft folder - is Minecraft still open?"); quit(1); }
+  sh('mkdir -p ' + q(GAME_DIR));
+  ALWAYS_KEEP.concat(keepSettings ? SETTINGS_KEEP : []).forEach(k => {
+    if (!exists(OLD_DIR + '/' + k)) return;
+    sh('mv ' + q(OLD_DIR + '/' + k) + ' ' + q(GAME_DIR + '/' + k));
+    if (k[0] !== '.') info('kept ' + k);
+  });
+  if (!exists(VAR_FILE)) setVariant('core');
+  say('Reinstalling everything fresh...');
+  if (runSync(false)) console.log('\n  Reset done! Old files are in ' + OLD_DIR + ' until the next reset.\n'); else quit(1);
+}
+
+function cmdStatus() {
+  header();
+  if (!exists(VAR_FILE)) { warn("Meowcraft isn't set up on this Mac yet. Run:  meowcraft install"); return; }
+  const variant = getVariant();
+  let local = null; try { local = JSON.parse(readText(LIST_FILE)); } catch (e) {}
+  let st = null; try { st = JSON.parse(readText(STAMP)); } catch (e) {}
+  info('Version:       ' + variantName(variant));
+  if (local) { info('Minecraft:     ' + local.minecraft); if (local.pack) info('Pack:          ' + local.pack); }
+  info('Mods:          ' + readLines(OWNED).length + ' installed');
+  info('Last updated:  ' + (st ? new Date(st.time).toLocaleString() : 'never'));
+  info('Game folder:   ' + GAME_DIR);
+  info('Command:       ' + TOOL_PATH + ' (v' + TOOL_VERSION + ')');
+  console.log('');
+  let onlineText = '';
+  try { onlineText = getText(REPO_RAW + '/meowcraft.json'); } catch (e) {}
+  if (!onlineText) { warn("Couldn't check GitHub for updates right now."); return; }
+  if (st && st.sig === hash(variant + '|' + onlineText)) console.log('  Up to date. =^.^=\n');
+  else {
+    let online = {}; try { online = JSON.parse(onlineText); } catch (e) {}
+    warn('An update is waiting' + (online.pack ? ' (pack ' + online.pack + ')' : '') + ' - run:  meowcraft update   (or just click Play Meowcraft)\n');
+  }
+}
+
+function cmdUninstall(flags) {
+  header();
+  const what = 'This removes the Play Meowcraft app, the Meowcraft profile in the Launcher and the meowcraft command.\n\nYour Meowcraft game folder stays, in case you come back.';
+  console.log('  ' + what.split('\n\n').join('\n  '));
+  if (!flags.yes && ask(what, ['Cancel', 'Uninstall'], 'Cancel') !== 'Uninstall') { console.log('  Nothing changed.'); return; }
+  while (launcherRunning()) { if (ask('Please close the Minecraft Launcher, then click OK.', ['Cancel', 'OK'], 'OK') !== 'OK') quit(1); }
+  shOk('rm -rf ' + q(APP_PATH) + ' ' + q(OLD_APP_DIR));
+  if (exists(LP_PATH)) {
+    const lp = JSON.parse(readText(LP_PATH));
+    if (lp.profiles && lp.profiles.meowcraft) {
+      sh('cp ' + q(LP_PATH) + ' ' + q(LP_PATH + '.meowcraft-backup'));
+      delete lp.profiles.meowcraft;
+      writeText(LP_PATH, JSON.stringify(lp, null, 2));
+    }
+  }
+  ['.zprofile', '.bash_profile'].forEach(f => {
+    const p = HOME + '/' + f;
+    if (exists(p)) writeText(p, readText(p).split('\n').filter(l => l.indexOf('# Meowcraft') < 0).join('\n'));
+  });
+  sh('rm -rf ' + q(TOOL_DIR));
+  console.log('  Meowcraft is uninstalled. If the cat icon is still in your Dock, drag it out. Bye for now =^.^=\n');
+}
+
+function cmdHelp() {
+  header();
+  console.log([
+    '  meowcraft install                  set up Meowcraft (Normal or Fancy) and the Play Meowcraft app',
+    '  meowcraft play                     check for updates, then open the Launcher (what the app does)',
+    '  meowcraft update                   check for new mods right now',
+    '  meowcraft switch normal|fancy      change versions',
+    '  meowcraft reset                    start over with fresh mods (worlds + screenshots are kept)',
+    '  meowcraft reset --keep_settings    same, but also keep settings, keybinds, waypoints and server list',
+    '  meowcraft status                   what you have, and whether an update is waiting',
+    '  meowcraft uninstall                remove the app, the Launcher profile and this command',
+    ''
+  ].join('\n'));
+}
+
+function run(argv) {
+  const words = [], flags = {};
+  (argv || []).forEach(a => {
+    const m = /^-{1,2}(.+)$/.exec(a);
+    if (m) flags[m[1].toLowerCase().replace(/-/g, '_')] = true; else words.push(a);
+  });
+  const cmd = (words[0] || 'help').toLowerCase();
+  if (cmd === 'install' || cmd === 'setup') cmdInstall(flags);
+  else if (cmd === 'play') cmdPlay(flags);
+  else if (cmd === 'update') cmdUpdate();
+  else if (cmd === 'switch') cmdSwitch(words);
+  else if (cmd === 'reset') cmdReset(flags);
+  else if (cmd === 'status') cmdStatus();
+  else if (cmd === 'uninstall') cmdUninstall(flags);
+  else cmdHelp();
+}
+
+if (IS_NODE) run(process.argv.slice(2));
+// MEOWCRAFT-TOOL-END (the updater only accepts a downloaded copy that ends with this line)

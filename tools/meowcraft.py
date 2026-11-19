@@ -1,20 +1,26 @@
 #!/usr/bin/env python3
 """
-Meowcraft tools  =^.^=
+Meowcraft server tools (Raspberry Pi)  =^.^=
 
-  python3 meowcraft.py status  --plugins <plugins folder>          # what's installed vs. newest for your Minecraft version
-  python3 meowcraft.py update  --plugins <plugins folder>          # same report, then asks before downloading updates
-  python3 meowcraft.py ready   26.4                                # are all client mods + server plugins out for 26.4 yet?
+  meowcraft status        what's installed vs. the newest plugin for your Minecraft version
+  meowcraft update        same report, then asks before downloading updates (stop the server first)
+  meowcraft ready 26.4    are all client mods + server plugins out for 26.4 yet?
+  meowcraft setup         one time: makes the "meowcraft" command work from anywhere
 
-The list of mods/plugins comes from meowcraft.json (next to this script's folder,
-or pass --manifest <file or https URL>). Uses only the Python standard library.
+Every command first pulls the newest meowcraft.json from GitHub, so edit the list on GitHub
+and just run "meowcraft update" here. The plugins folder is found automatically (the first time
+it asks if there's more than one server) and remembered; --plugins <folder> overrides it.
+If Crafty owns the plugins folder, it re-runs itself with sudo when it needs to.
+Uses only the Python standard library.
 """
 import argparse
 import datetime
 import json
 import os
 import re
+import glob
 import shutil
+import subprocess
 import sys
 import urllib.parse
 import urllib.request
@@ -267,25 +273,120 @@ def cmd_ready(args, manifest):
     print()
 
 
+REPO_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), ".."))
+CONFIG = os.path.join(os.path.expanduser("~"), ".config", "meowcraft", "plugins-folder")
+
+
+def pull_list():
+    """Get the newest meowcraft.json (and this tool) from GitHub. Quiet unless something's off."""
+    if os.environ.get("MEOWCRAFT_PULLED") or not os.path.isdir(os.path.join(REPO_DIR, ".git")):
+        return
+    r = subprocess.run(["git", "-C", REPO_DIR, "pull", "-q", "--ff-only"], capture_output=True, text=True)
+    if r.returncode != 0:
+        print(color("  Couldn't get the newest list from GitHub, using the copy on the Pi:", YELLOW))
+        print(color("    " + (r.stderr.strip().splitlines() or ["(no details)"])[-1], GRAY))
+        print(color(f"    If you edited files on the Pi itself, run:  cd {REPO_DIR} && git status\n", GRAY))
+    os.environ["MEOWCRAFT_PULLED"] = "1"
+
+
+def find_plugins_folder(given):
+    if given:
+        return os.path.abspath(os.path.expanduser(given))
+    if os.path.isfile(CONFIG):
+        saved = open(CONFIG, encoding="utf-8").read().strip()
+        if saved and os.path.isdir(saved):
+            return saved
+    base = os.path.expanduser("~/crafty/docker/servers")
+    found = sorted(glob.glob(os.path.join(base, "*", "plugins")))
+    if not found and os.path.isdir(base) and not os.access(base, os.R_OK | os.X_OK) and os.geteuid() != 0:
+        print(color("  Crafty owns its servers folder, so finding the plugins folder needs your password (sudo).", GRAY))
+        sudo_rerun(sys.argv[1:])
+    if not found:
+        sys.exit("Couldn't find the server's plugins folder. Run once with:  meowcraft status --plugins <folder>")
+    if len(found) == 1:
+        choice = found[0]
+    else:
+        print("  Which server?")
+        for i, f in enumerate(found, 1):
+            print(f"    {i}. {f}")
+        pick = input("  Type a number: ").strip()
+        if not pick.isdigit() or not 1 <= int(pick) <= len(found):
+            sys.exit("Nothing picked.")
+        choice = found[int(pick) - 1]
+    try:
+        os.makedirs(os.path.dirname(CONFIG), exist_ok=True)
+        with open(CONFIG, "w", encoding="utf-8") as f:
+            f.write(choice + "\n")
+        print(color(f"  Using {choice} (remembered for next time)\n", GRAY))
+    except OSError:
+        print(color(f"  Using {choice}\n", GRAY))
+    return choice
+
+
+def rerun_with_sudo_if_needed(folder, need_write):
+    ok = os.access(folder, os.R_OK | os.X_OK) and (not need_write or os.access(folder, os.W_OK))
+    if ok or os.geteuid() == 0:
+        return
+    print(color("  Crafty owns the plugins folder, so this needs your password (sudo).", GRAY))
+    args = [a for a in sys.argv[1:]]
+    if "--plugins" not in args:
+        args += ["--plugins", folder]
+    sudo_rerun(args)
+
+
+def sudo_rerun(args):
+    # Keep HOME so "~" (the Crafty folder, the saved settings) still means your home folder under sudo
+    env_args = ["env", "MEOWCRAFT_PULLED=1", "HOME=" + os.path.expanduser("~")]
+    os.execvp("sudo", ["sudo"] + env_args + [sys.executable, os.path.realpath(__file__)] + args)
+
+
+def cmd_setup(args, manifest):
+    bin_dir = os.path.expanduser("~/.local/bin")
+    os.makedirs(bin_dir, exist_ok=True)
+    target = os.path.join(bin_dir, "meowcraft")
+    with open(target, "w", encoding="utf-8") as f:
+        f.write(f'#!/bin/sh\n# Meowcraft server tools - runs {os.path.realpath(__file__)}\n'
+                f'exec python3 "{os.path.realpath(__file__)}" "$@"\n')
+    os.chmod(target, 0o755)
+    bashrc = os.path.expanduser("~/.bashrc")
+    line = 'export PATH="$HOME/.local/bin:$PATH"   # Meowcraft'
+    text = open(bashrc, encoding="utf-8").read() if os.path.isfile(bashrc) else ""
+    if ".local/bin" not in text:
+        with open(bashrc, "a", encoding="utf-8") as f:
+            f.write("\n" + line + "\n")
+    print(color("\n  =^.^=  Done! Open a new terminal (or run: source ~/.bashrc), then just type:", GREEN))
+    print("    meowcraft status\n    meowcraft update\n    meowcraft ready 26.4\n")
+
+
 def main():
-    here = os.path.dirname(os.path.abspath(__file__))
-    default_manifest = os.path.join(here, "..", "meowcraft.json")
-    ap = argparse.ArgumentParser(description="Meowcraft mod & plugin tools =^.^=")
+    default_manifest = os.path.join(REPO_DIR, "meowcraft.json")
+    ap = argparse.ArgumentParser(prog="meowcraft", description="Meowcraft server tools =^.^=")
     ap.add_argument("--manifest", default=os.environ.get("MEOWCRAFT_MANIFEST", default_manifest),
                     help="meowcraft.json file or https URL")
-    sub = ap.add_subparsers(dest="cmd", required=True)
+    sub = ap.add_subparsers(dest="cmd")
     for name in ("status", "update"):
-        s = sub.add_parser(name)
-        s.add_argument("--plugins", required=True, help="the server's plugins folder")
+        s = sub.add_parser(name, help="check plugins" if name == "status" else "check, then download updates")
+        s.add_argument("--plugins", help="the server's plugins folder (found automatically)")
         if name == "update":
             s.add_argument("--yes", action="store_true", help="don't ask before downloading")
-    r = sub.add_parser("ready")
+    r = sub.add_parser("ready", help="is everything out for a new Minecraft version?")
     r.add_argument("version", help="Minecraft version to check, e.g. 26.4")
+    sub.add_parser("setup", help="make the meowcraft command work from anywhere")
     args = ap.parse_args()
+    if not args.cmd:
+        print(__doc__)
+        return
+    if args.cmd == "setup":
+        cmd_setup(args, None)
+        return
 
+    pull_list()
     manifest = load_manifest(args.manifest)
-    if args.cmd in ("status", "update") and not os.path.isdir(args.plugins):
-        sys.exit(f"Plugins folder not found: {args.plugins}")
+    if args.cmd in ("status", "update"):
+        args.plugins = find_plugins_folder(args.plugins)
+        if not os.path.isdir(args.plugins):
+            sys.exit(f"Plugins folder not found: {args.plugins}")
+        rerun_with_sudo_if_needed(args.plugins, need_write=args.cmd == "update")
     {"status": cmd_status, "update": cmd_update, "ready": cmd_ready}[args.cmd](args, manifest)
 
 
