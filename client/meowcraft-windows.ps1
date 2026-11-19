@@ -29,7 +29,7 @@ $AlwaysKeep   = @('saves', 'screenshots', '.meowcraft-variant')
 $SettingsKeep = @('options.txt', 'config', 'xaero', 'XaeroWaypoints', 'XaeroWorldMap', 'servers.dat')
 # ------------------------------------------------------------------------------------------
 
-$Headers  = @{ 'User-Agent' = "pattycakez69/meowcraft/$ToolVersion" }
+$Headers  = @{ 'User-Agent' = "Meowcraft/$ToolVersion (github.com/pattyryke/meowcraft)" }   # must be "Name/version (...)" or newer PowerShell refuses it
 $McDir    = Join-Path $env:APPDATA '.minecraft'
 $GameDir  = Join-Path $McDir 'meowcraft'
 $OldDir   = Join-Path $McDir 'meowcraft-old'
@@ -489,7 +489,7 @@ function Cmd-Play {
     Require-Installed
     if (Test-GameRunning) { Say 'Minecraft is already running - no updates while you play.'; Open-LauncherAndExit }
     $r = Run-Sync -Quick
-    if ($r -eq $false) { Warn "Couldn't check for updates (no internet?). Playing with what you have." }
+    if ($r -eq $false) { Warn "Couldn't check for updates (no internet, or a typo in the mod list on GitHub). Playing with what you have." }
     if ($null -eq $r) { Read-Host '  Press Enter to open Minecraft anyway' | Out-Null }
     Open-LauncherAndExit
 }

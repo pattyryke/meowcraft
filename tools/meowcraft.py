@@ -296,7 +296,11 @@ def find_plugins_folder(given):
         saved = open(CONFIG, encoding="utf-8").read().strip()
         if saved and os.path.isdir(saved):
             return saved
-    found = sorted(glob.glob(os.path.expanduser("~/crafty/docker/servers/*/plugins")))
+    base = os.path.expanduser("~/crafty/docker/servers")
+    found = sorted(glob.glob(os.path.join(base, "*", "plugins")))
+    if not found and os.path.isdir(base) and not os.access(base, os.R_OK | os.X_OK) and os.geteuid() != 0:
+        print(color("  Crafty owns its servers folder, so finding the plugins folder needs your password (sudo).", GRAY))
+        sudo_rerun(sys.argv[1:])
     if not found:
         sys.exit("Couldn't find the server's plugins folder. Run once with:  meowcraft status --plugins <folder>")
     if len(found) == 1:
@@ -309,10 +313,13 @@ def find_plugins_folder(given):
         if not pick.isdigit() or not 1 <= int(pick) <= len(found):
             sys.exit("Nothing picked.")
         choice = found[int(pick) - 1]
-    os.makedirs(os.path.dirname(CONFIG), exist_ok=True)
-    with open(CONFIG, "w", encoding="utf-8") as f:
-        f.write(choice + "\n")
-    print(color(f"  Using {choice} (remembered for next time)\n", GRAY))
+    try:
+        os.makedirs(os.path.dirname(CONFIG), exist_ok=True)
+        with open(CONFIG, "w", encoding="utf-8") as f:
+            f.write(choice + "\n")
+        print(color(f"  Using {choice} (remembered for next time)\n", GRAY))
+    except OSError:
+        print(color(f"  Using {choice}\n", GRAY))
     return choice
 
 
@@ -324,7 +331,12 @@ def rerun_with_sudo_if_needed(folder, need_write):
     args = [a for a in sys.argv[1:]]
     if "--plugins" not in args:
         args += ["--plugins", folder]
-    env_args = ["env", "MEOWCRAFT_PULLED=1"]
+    sudo_rerun(args)
+
+
+def sudo_rerun(args):
+    # Keep HOME so "~" (the Crafty folder, the saved settings) still means your home folder under sudo
+    env_args = ["env", "MEOWCRAFT_PULLED=1", "HOME=" + os.path.expanduser("~")]
     os.execvp("sudo", ["sudo"] + env_args + [sys.executable, os.path.realpath(__file__)] + args)
 
 

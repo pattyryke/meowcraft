@@ -28,7 +28,7 @@ const ALWAYS_KEEP = ['saves', 'screenshots', '.meowcraft-variant'];
 const SETTINGS_KEEP = ['options.txt', 'config', 'xaero', 'XaeroWaypoints', 'XaeroWorldMap', 'servers.dat'];
 // -------------------------------------------------------------------------------------------
 
-const UA = 'pattycakez69/meowcraft/' + TOOL_VERSION;
+const UA = 'Meowcraft/' + TOOL_VERSION + ' (github.com/pattyryke/meowcraft)';
 const ICON = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAABeElEQVR4Xu2aIW/CUBSFW8I0CRL01NwsAmpn+AMY5IIhm52cHeEnIPgDNbNgsPwBNJYEPbNg3rtNerP7wsrhJudTJWnKvZxzXm95zWfDVeaZlufiL7ABNG1ZwPbwVlvP6HEBqdNSDy2Exr0ClQxIdvNu+DhYxmw0nQfp+2oNp1qx3SvABtCoGeg8fIXadvP3RvOg+V7WkGVTZuAucR9iNQMa2v3hGuQ1U3GvABtAo2bg/BPXfguWucVyjsRSAy2Exr0C+VMvzv3XrMe3ZCCeDdwrwAbQmGahyXgU6twX3+H4efMSjtflNqmX/7omLYSGCqChAmjcK9DILFT9Pydime8tcBa6J9xnwDQLdcafST96v3itPf+4SdtrO5cff36vewXYABpTBiz0i7iPpnndck4qtBAa9wrk8n0hba9KknpPSEVb++X8I/eq3SvABtBUMiCx5KFpNN9LaCE07hVQM6Dl4ZZY3k1yrwAbQGN6HrB4EQUthMa9Ar+V1GApTOWmuAAAAABJRU5ErkJggg==';
 
 // ================================ platform helpers ================================
@@ -448,7 +448,7 @@ function cmdPlay(flags) {
   requireInstalled();
   if (gameRunning()) { say('Minecraft is already running - no updates while you play.'); openLauncher(); return; }
   const r = runSync(true);
-  if (r === false) warn("Couldn't check for updates (no internet?). Playing with what you have.");
+  if (r === false) warn("Couldn't check for updates (no internet, or a typo in the mod list on GitHub). Playing with what you have.");
   openLauncher();
   if (r === null) quit(1);   // the Play app shows a message for this
 }

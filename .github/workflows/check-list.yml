@@ -1,0 +1,46 @@
+# Checks meowcraft.json for typos (like a missing or extra comma) every time it changes.
+# If there's a problem, the commit gets a red X on GitHub and you get an email saying which line.
+name: Check meowcraft.json
+on:
+  push:
+    paths: ["meowcraft.json"]
+  pull_request:
+    paths: ["meowcraft.json"]
+  workflow_dispatch:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Is meowcraft.json valid?
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          text = open("meowcraft.json", encoding="utf-8").read()
+          try:
+              m = json.loads(text)
+          except json.JSONDecodeError as e:
+              lines = text.splitlines()
+              print(f"::error file=meowcraft.json,line={e.lineno},col={e.colno}::{e.msg}")
+              print(f"\nmeowcraft.json has a typo on line {e.lineno}: {e.msg}\n")
+              for n in range(max(1, e.lineno - 2), min(len(lines), e.lineno + 1) + 1):
+                  print(f"{'>>' if n == e.lineno else '  '} {n:4} | {lines[n - 1]}")
+              print("\nTip: every item in a list needs a comma after it, except the last one.")
+              sys.exit(1)
+          problems = []
+          if not isinstance(m.get("minecraft"), str): problems.append('"minecraft" should be a version like "26.3"')
+          if not isinstance(m.get("pack"), int): problems.append('"pack" should be a number like 5')
+          for sec in ("core", "fancy"):
+              if not isinstance(m.get("client", {}).get(sec, {}).get("mods", []), list): problems.append(f"client.{sec}.mods should be a list")
+          for p in m.get("server", {}).get("plugins", []):
+              need = {"modrinth": ["project"], "hangar": ["project"], "github": ["repo"]}.get(p.get("source"))
+              if need is None: problems.append(f'{p.get("name", "?")}: "source" should be modrinth, hangar or github')
+              else:
+                  for k in need + ["name", "jar"]:
+                      if not p.get(k): problems.append(f'{p.get("name", "?")}: missing "{k}"')
+          if problems:
+              for p in problems: print(f"::error file=meowcraft.json::{p}")
+              sys.exit(1)
+          print(f"meowcraft.json looks good: Minecraft {m['minecraft']}, pack {m['pack']}, "
+                f"{len(m['client']['core']['mods'])} core mods, {len(m['server']['plugins'])} server plugins.")
+          PY

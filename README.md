@@ -47,6 +47,9 @@ Everything lives in a `.meowcraft` folder in your home folder.
 ## Update night (Patrick)
 
 1. Edit `meowcraft.json` on GitHub and add 1 to `"pack"`. Commit.
+   GitHub checks the file for typos right away. A green ✓ next to your commit means it's good. A red ✗ (plus an email)
+   means there's a mistake, usually a missing or extra comma. Click the ✗ to see the exact line, and fix it before step 2.
+   Until it's fixed, friends just keep playing with what they have, and nothing breaks.
 2. On the Pi, stop the server in Crafty, make a backup, then: `meowcraft update`
 3. Start the server. Post: "Meowcraft updated, just play like normal =^.^="
 
