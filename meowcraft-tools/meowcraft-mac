@@ -160,7 +160,7 @@ function requireInstalled() {
 // Grab the newest copy of this command for next time (the Play app also does this before each run)
 function updateSelf() {
   if (IS_NODE || !exists(TOOL_PATH)) return;
-  shOk('cd ' + q(TOOL_DIR) + ' && (curl -fsSL -m 15 ' + q(REPO_RAW + '/client/meowcraft-mac') + ' -o meowcraft.new && grep -q MEOWCRAFT-TOOL-END meowcraft.new && ' +
+  shOk('cd ' + q(TOOL_DIR) + ' && (curl -fsSL -m 15 ' + q(REPO_RAW + '/meowcraft-tools/meowcraft-mac') + ' -o meowcraft.new && grep -q MEOWCRAFT-TOOL-END meowcraft.new && ' +
        '(cmp -s meowcraft.new meowcraft || mv -f meowcraft.new meowcraft)); rm -f meowcraft.new; chmod +x meowcraft');
 }
 
@@ -328,7 +328,7 @@ function sync(quick) {
 
   // 5. Server list (only if they don't have one yet)
   if (!exists(GAME_DIR + '/servers.dat')) {
-    download(REPO_RAW + '/installer/servers.dat', GAME_DIR + '/servers.dat');
+    download(REPO_RAW + '/meowcraft-tools/zip-installer/servers.dat', GAME_DIR + '/servers.dat');
     say('Added Meowcraft to your server list');
   }
 
@@ -361,7 +361,7 @@ function runSync(quick) {
 
 function installCommand() {
   sh('mkdir -p ' + q(TOOL_DIR));
-  if (!IS_NODE && !exists(TOOL_PATH)) download(REPO_RAW + '/client/meowcraft-mac', TOOL_PATH);
+  if (!IS_NODE && !exists(TOOL_PATH)) download(REPO_RAW + '/meowcraft-tools/meowcraft-mac', TOOL_PATH);
   if (exists(TOOL_PATH)) sh('chmod +x ' + q(TOOL_PATH));
   // Let "meowcraft" work in any new Terminal window (zsh is the Mac default; bash just in case)
   const line = 'export PATH="$HOME/.meowcraft:$PATH"   # Meowcraft';
@@ -374,8 +374,8 @@ function makeApp() {
   if (IS_NODE) { say('(test) would make the Play Meowcraft app'); return; }
   if (exists(OLD_APP_DIR)) shOk('rm -rf ' + q(OLD_APP_DIR));   // version 2 leftovers
   const icns = TOOL_DIR + '/meowcraft.icns';
-  if (!exists(icns)) shOk('curl -fsSL -m 20 -o ' + q(icns) + ' ' + q(REPO_RAW + '/client/meowcraft.icns'));
-  const refresh = 'cd ~/.meowcraft && (curl -fsSL -m 15 ' + q(REPO_RAW + '/client/meowcraft-mac') +
+  if (!exists(icns)) shOk('curl -fsSL -m 20 -o ' + q(icns) + ' ' + q(REPO_RAW + '/meowcraft-tools/meowcraft.icns'));
+  const refresh = 'cd ~/.meowcraft && (curl -fsSL -m 15 ' + q(REPO_RAW + '/meowcraft-tools/meowcraft-mac') +
     ' -o meowcraft.new && grep -q MEOWCRAFT-TOOL-END meowcraft.new && mv -f meowcraft.new meowcraft); rm -f meowcraft.new; chmod +x meowcraft';
   const asText = (s) => '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
   const script = [

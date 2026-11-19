@@ -5,10 +5,10 @@ The master list for the Meowcraft server: every client mod, resource pack, shade
 | File | What it is |
 | --- | --- |
 | `meowcraft.json` | **The master list.** Edit this to add or remove anything. Bump `"pack"` each time. |
-| `client/` | The `meowcraft` command for friends' computers (Windows + Mac), plus the one-line setups. |
-| `tools/meowcraft.py` | The `meowcraft` command for the Pi: checks and updates server plugins. |
-| `installer/` | The old zip installers. Only `servers.dat` is still used; the rest can go once nobody uses the old zips. |
-| `server/meowcraft_stats.zip` | Backup copy of the silly stats datapack. |
+| `meowcraft-tools/` | The `meowcraft` command for friends' computers (Windows + Mac), plus the one-line setups. |
+| `meowcraft-tools/zip-installer/` | The old zip installers. Only `servers.dat` is still used; the rest can go once nobody uses the old zips. |
+| `meowcraft-server-tools/meowcraft.py` | The `meowcraft` command for the Pi: checks and updates server plugins. |
+| `meowcraft-server-tools/datapacks/` | Backup copy of the silly stats datapack. |
 
 ## For friends: setting up Meowcraft (once)
 
@@ -16,12 +16,12 @@ First open the Minecraft Launcher, log in, then close it. Then paste ONE line an
 
 **Windows:** open **PowerShell** (Start menu, type "PowerShell") and paste:
 ```
-irm https://raw.githubusercontent.com/pattyryke/meowcraft/main/client/get-windows.ps1 | iex
+irm https://raw.githubusercontent.com/pattyryke/meowcraft/main/meowcraft-tools/get-windows.ps1 | iex
 ```
 
 **Mac:** open **Terminal** (Cmd+Space, type "Terminal") and paste:
 ```
-curl -fsSL https://raw.githubusercontent.com/pattyryke/meowcraft/main/client/get-mac.sh | bash
+curl -fsSL https://raw.githubusercontent.com/pattyryke/meowcraft/main/meowcraft-tools/get-mac.sh | bash
 ```
 
 It asks Normal or Fancy, installs everything, and adds a cat **Play Meowcraft** icon (Windows: desktop, Mac: Dock).
@@ -70,7 +70,7 @@ miss the new stuff. The Launcher profile shows the pack number (`Meowcraft · pa
 | `source` | Also needs | Example |
 | --- | --- | --- |
 | `modrinth` | `project` (name from the Modrinth link) | `{ "name": "Chunky", "source": "modrinth", "project": "chunky", "jar": "^Chunky" }` |
-| `hangar` | `project` (name from the Hangar link) | `{ "name": "Chestsort+", "source": "hangar", "project": "chestsort", "jar": "^chestsort" }` |
+| `hangar` | `project` (name from the Hangar link) | `{ "name": "Timberella", "source": "hangar", "project": "timberella", "jar": "^timberella" }` |
 | `github` | `repo` + `asset` (pattern for the jar in the release) | `{ "name": "EssentialsX", "source": "github", "repo": "EssentialsX/Essentials", "asset": "^EssentialsX-[0-9].*\\.jar$", "jar": "^EssentialsX-[0-9]" }` |
 
 `jar` is the start of the plugin's file name in your `plugins` folder. That's how the tool recognizes what's installed.
@@ -79,10 +79,12 @@ miss the new stuff. The Launcher profile shows the pack number (`Meowcraft · pa
 
 ## The Pi command
 
+On the Pi this repo lives in `~/docker/meowcraft/tools`, next to Crafty in `~/docker/meowcraft/crafty`. Spare plugin jars can sit in `tools/plugins/` (they aren't uploaded).
+
 One time, on the Pi:
 ```
-git clone https://github.com/pattyryke/meowcraft ~/meowcraft      # skip if it's already there
-python3 ~/meowcraft/tools/meowcraft.py setup
+git clone https://github.com/pattyryke/meowcraft ~/docker/meowcraft/tools      # skip if it's already there
+python3 ~/docker/meowcraft/tools/meowcraft-server-tools/meowcraft.py setup
 source ~/.bashrc
 ```
 After that, from anywhere:
@@ -102,4 +104,5 @@ After that, from anywhere:
 ## Notes
 - The tool prefers stable releases over betas, everywhere.
 - GitHub releases (like EssentialsX) don't say which Minecraft version they support, so the tool flags them for you to double-check.
+- ClientSort Paper is the server half of the ClientSort mod, which everyone gets. Players without the mod can still sort with Shift + right-click on an empty slot, or `/sort`.
 - Spark is built into Purpur, so it isn't listed. The silly stats datapack is listed under `server.datapacks` for reference only. It's a custom file, not downloaded.

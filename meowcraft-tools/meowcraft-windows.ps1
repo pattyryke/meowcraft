@@ -191,7 +191,7 @@ function Require-Installed {
 function Update-Self {
     if ($env:MEOWCRAFT_FRESH -or $PSCommandPath -ne $ToolPath) { return }
     $new = $null
-    try { $new = [string](Invoke-WebRequest -UseBasicParsing -TimeoutSec 15 -Headers $Headers -Uri "$RepoRaw/client/meowcraft-windows.ps1").Content } catch { return }
+    try { $new = [string](Invoke-WebRequest -UseBasicParsing -TimeoutSec 15 -Headers $Headers -Uri "$RepoRaw/meowcraft-tools/meowcraft-windows.ps1").Content } catch { return }
     if (-not $new -or -not $new.Contains('MEOWCRAFT-TOOL-END')) { return }   # only use a complete file
     if ($new -eq [IO.File]::ReadAllText($ToolPath)) { return }
     [IO.File]::WriteAllText($ToolPath, $new, $Utf8)
@@ -388,7 +388,7 @@ function Invoke-Sync([switch]$Quick) {
     # 5. Server list (only if they don't have one yet)
     $serversDat = Join-Path $GameDir 'servers.dat'
     if (-not (Test-Path $serversDat)) {
-        Save-Url "$RepoRaw/installer/servers.dat" $serversDat
+        Save-Url "$RepoRaw/meowcraft-tools/zip-installer/servers.dat" $serversDat
         Say 'Added Meowcraft to your server list'
     }
 
@@ -430,10 +430,10 @@ function Run-Sync([switch]$Quick) {
 function Install-Command {
     New-Item -ItemType Directory -Force -Path $ToolDir | Out-Null
     if ($PSCommandPath -and $PSCommandPath -ne $ToolPath) { Copy-Item -Force $PSCommandPath $ToolPath }
-    elseif (-not (Test-Path $ToolPath)) { Save-Url "$RepoRaw/client/meowcraft-windows.ps1" $ToolPath }
+    elseif (-not (Test-Path $ToolPath)) { Save-Url "$RepoRaw/meowcraft-tools/meowcraft-windows.ps1" $ToolPath }
     $shim = "@echo off`r`npowershell -NoProfile -ExecutionPolicy Bypass -File `"%~dp0meowcraft-windows.ps1`" %*`r`n"
     [IO.File]::WriteAllText($ShimPath, $shim, (New-Object System.Text.ASCIIEncoding))
-    if (-not (Test-Path $IcoPath)) { try { Save-Url "$RepoRaw/client/meowcraft.ico" $IcoPath } catch {} }
+    if (-not (Test-Path $IcoPath)) { try { Save-Url "$RepoRaw/meowcraft-tools/meowcraft.ico" $IcoPath } catch {} }
     # Let "meowcraft" work in any new Command Prompt or PowerShell window
     $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
     $parts = @(); if ($userPath) { $parts = @($userPath.Split(';') | Where-Object { $_ }) }
