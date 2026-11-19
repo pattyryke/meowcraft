@@ -296,7 +296,9 @@ def find_plugins_folder(given):
         saved = open(CONFIG, encoding="utf-8").read().strip()
         if saved and os.path.isdir(saved):
             return saved
-    base = os.path.expanduser("~/crafty/docker/servers")
+    base = os.path.expanduser("~/docker/meowcraft/crafty/docker/servers")
+    if not os.path.isdir(base):
+        base = os.path.expanduser("~/crafty/docker/servers")
     found = sorted(glob.glob(os.path.join(base, "*", "plugins")))
     if not found and os.path.isdir(base) and not os.access(base, os.R_OK | os.X_OK) and os.geteuid() != 0:
         print(color("  Crafty owns its servers folder, so finding the plugins folder needs your password (sudo).", GRAY))

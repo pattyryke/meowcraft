@@ -2,3 +2,5 @@ __pycache__/
 *.pyc
 *.whl
 .DS_Store
+plugins/
+*.jar

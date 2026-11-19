@@ -3,7 +3,7 @@ ObjC.import('Foundation');
 
 // ---- Built-in lists (used only if the online list in manifest-url.txt can't be read) ----
 let MC_VERSION = '26.3';
-const CORE_MODS = ['fabric-api', 'sodium', 'immediatelyfast', 'modmenu', 'xaeros-minimap', 'xaeros-world-map', 'jade', 'appleskin', 'mouse-tweaks', 'zoomify', 'simple-voice-chat'];
+const CORE_MODS = ['fabric-api', 'sodium', 'immediatelyfast', 'modmenu', 'xaeros-minimap', 'xaeros-world-map', 'jade', 'appleskin', 'mouse-tweaks', 'zoomify', 'simple-voice-chat', 'emotecraft', 'clientsort'];
 const FANCY_MODS = ['iris', 'entity-model-features', 'entitytexturefeatures'];
 const FANCY_PACKS = ['fresh-animations'];
 const FANCY_SHADERS = [['HVnmMxH1', 'Meowcraft High - Complementary Reimagined.zip'], ['Q1vvjJYV', 'Meowcraft Medium - BSL.zip'], ['makeup-ultra-fast-shaders', 'Meowcraft Low - MakeUp Ultra Fast.zip']];
