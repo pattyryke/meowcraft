@@ -48,7 +48,8 @@
       { "name": "Chestsort+",              "source": "hangar",   "project": "chestsort",          "jar": "^chestsort" },
       { "name": "Emotecraft",              "source": "modrinth", "project": "emotecraft",         "jar": "^emotecraft" },
       { "name": "ModularPacks",            "source": "modrinth", "project": "modularpacks",       "jar": "^ModularPacks" },
-      { "name": "GravesX",                 "source": "modrinth", "project": "gravesx",            "jar": "^GravesX" }
+      { "name": "GravesX",                 "source": "modrinth", "project": "gravesx",            "jar": "^GravesX" },
+      { "name": "Timberella",              "source": "hangar",   "project": "timberella",         "jar": "^timberella" },
     ],
     "datapacks": [
       { "name": "Meowcraft Silly Stats", "source": "custom", "file": "meowcraft_stats.zip", "notes": "Copy of server/meowcraft_stats.zip in this repo - goes in world/datapacks" }
