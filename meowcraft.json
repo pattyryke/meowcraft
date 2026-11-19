@@ -52,7 +52,7 @@
       { "name": "ModularPacks",            "source": "modrinth", "project": "modularpacks",       "jar": "^ModularPacks" },
       { "name": "GravesX",                 "source": "modrinth", "project": "gravesx",            "jar": "^GravesX" },
       { "name": "Timberella",              "source": "hangar",   "project": "timberella",         "jar": "^timberella" },
-      { "name": "Vault",                   "source": "manual",   "notes": "Custom 1.7.4 build for 26.3 - the official Vault stops at 1.7.3, so don't swap it for that", "jar": "^Vault-" }
+      { "name": "Vault",                   "source": "github",   "repo": "MilkBowl/Vault", "asset": "^Vault\\.jar$", "jar": "^Vault[-.]" }
     ],
     "datapacks": [
       { "name": "Meowcraft Silly Stats", "source": "custom", "file": "meowcraft_stats.zip", "notes": "Copy of meowcraft-server-tools/datapacks/meowcraft_stats.zip in this repo - goes in world/datapacks" }
