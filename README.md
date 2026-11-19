@@ -39,6 +39,7 @@ The icon is all most people need. For everything else, type these in a new Power
 | `meowcraft switch normal` / `switch fancy` | Change versions |
 | `meowcraft reset` | Start the Meowcraft folder over with fresh mods. Worlds and screenshots are always kept. |
 | `meowcraft reset --keep_settings` | Same, but also keeps game settings + keybinds, mod settings, minimap waypoints and the server list |
+| `meowcraft upgrade` | Get the newest version of the `meowcraft` command itself (Windows asks about this on Play too) |
 | `meowcraft uninstall` | Remove the icon, the Launcher profile and the command (the game folder stays) |
 
 Reset moves everything it doesn't keep into `.minecraft/meowcraft-old` (Mac: `minecraft/meowcraft-old`) until the next reset, so nothing is lost by accident.

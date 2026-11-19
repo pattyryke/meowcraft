@@ -6,6 +6,7 @@
 #   meowcraft switch normal|fancy     change versions
 #   meowcraft reset [--keep_settings] start the Meowcraft folder over (worlds and screenshots are always kept)
 #   meowcraft status                  what you have, and whether an update is waiting
+#   meowcraft upgrade                 get the newest version of this command
 #   meowcraft uninstall               remove the icon, the Launcher profile and this command
 #
 # Lives in %USERPROFILE%\.meowcraft. Keep this file plain ASCII (Windows PowerShell 5.1 reads it as ANSI).
@@ -13,7 +14,7 @@ $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'   # makes downloads much faster in Windows PowerShell
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-$ToolVersion = '3.0'
+$ToolVersion = '3.1'
 $RepoRaw = 'https://raw.githubusercontent.com/pattyryke/meowcraft/main'
 
 # ---- Built-in lists (only used on a first install if the online list can't be read) ----
@@ -187,18 +188,25 @@ function Require-Installed {
     }
 }
 
-# Grab the newest copy of this command. If it changed, run the new copy instead and stop here.
-function Update-Self {
-    if ($env:MEOWCRAFT_FRESH -or $PSCommandPath -ne $ToolPath) { return }
+# Newer copy of this command on GitHub? Returns its text, or $null if there isn't one (or no internet).
+function Get-NewerTool {
     $new = $null
-    try { $new = [string](Invoke-WebRequest -UseBasicParsing -TimeoutSec 15 -Headers $Headers -Uri "$RepoRaw/meowcraft-tools/meowcraft-windows.ps1").Content } catch { return }
-    if (-not $new -or -not $new.Contains('MEOWCRAFT-TOOL-END')) { return }   # only use a complete file
-    if ($new -eq [IO.File]::ReadAllText($ToolPath)) { return }
+    try { $new = [string](Invoke-WebRequest -UseBasicParsing -TimeoutSec 15 -Headers $Headers -Uri "$RepoRaw/meowcraft-tools/meowcraft-windows.ps1").Content } catch { return $null }
+    if (-not $new -or -not $new.Contains('MEOWCRAFT-TOOL-END')) { return $null }   # only use a complete file
+    if ((Test-Path $ToolPath) -and $new -eq [IO.File]::ReadAllText($ToolPath)) { return $null }
+    return $new
+}
+# Asks before swapping in a newer copy, and the new copy only runs next time. It never downloads code
+# and runs it on its own: that's exactly what Windows Defender looks for in malware.
+function Check-ToolUpdate {
+    if ($PSCommandPath -ne $ToolPath) { return }
+    $new = Get-NewerTool
+    if (-not $new) { return }
+    Say 'A newer version of the Meowcraft command is available.'
+    $r = Read-Host '  Press Enter to get it (or type n to skip for now)'
+    if ($r.Trim().ToLower().StartsWith('n')) { Info 'Skipped. Run  meowcraft upgrade  whenever you like.'; return }
     [IO.File]::WriteAllText($ToolPath, $new, $Utf8)
-    $env:MEOWCRAFT_FRESH = '1'
-    $ps = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
-    & $ps -NoProfile -ExecutionPolicy Bypass -File $ToolPath @args
-    exit $LASTEXITCODE
+    Say 'Got it - the new version is used from next time.'
 }
 
 # ================================ the sync ================================
@@ -444,14 +452,27 @@ function Make-Icons {
     foreach ($folder in @([Environment]::GetFolderPath('Desktop'), [Environment]::GetFolderPath('Programs'))) {
         if (-not $folder) { continue }
         $lnk = $ws.CreateShortcut((Join-Path $folder 'Play Meowcraft.lnk'))
-        $lnk.TargetPath = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
-        $lnk.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$ToolPath`" play --from_icon"
+        # Points at meowcraft.cmd rather than straight at PowerShell: shortcuts that launch PowerShell
+        # directly are a common malware trick, so Windows Defender is suspicious of them.
+        $lnk.TargetPath = $ShimPath
+        $lnk.Arguments = 'play --from_icon'
         $lnk.WorkingDirectory = $ToolDir
         if (Test-Path $IcoPath) { $lnk.IconLocation = "$IcoPath,0" }
         $lnk.Description = 'Update Meowcraft mods and open Minecraft'
         $lnk.Save()
     }
     if (Test-Path $OldApp) { Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $OldApp }   # version 2 leftovers
+}
+# Icons made before v3.1 pointed straight at PowerShell. Remake them the new way, once.
+function Fix-OldIcons {
+    try {
+        $ws = New-Object -ComObject WScript.Shell
+        foreach ($folder in @([Environment]::GetFolderPath('Desktop'), [Environment]::GetFolderPath('Programs'))) {
+            if (-not $folder) { continue }
+            $path = Join-Path $folder 'Play Meowcraft.lnk'
+            if ((Test-Path $path) -and $ws.CreateShortcut($path).TargetPath -like '*powershell.exe') { Make-Icons; return }
+        }
+    } catch {}
 }
 function Ask-Variant {
     if ($Flags['fancy']) { return 'fancy' }
@@ -483,8 +504,9 @@ function Cmd-Install {
 }
 
 function Cmd-Play {
-    Update-Self @args
     Header
+    Check-ToolUpdate
+    Fix-OldIcons
     Require-Launcher
     Require-Installed
     if (Test-GameRunning) { Say 'Minecraft is already running - no updates while you play.'; Open-LauncherAndExit }
@@ -495,8 +517,8 @@ function Cmd-Play {
 }
 
 function Cmd-Update {
-    Update-Self @args
     Header
+    Check-ToolUpdate
     Require-Launcher
     Require-Installed
     if (Test-GameRunning) { Warn 'Minecraft is running - close it first, then try again.'; exit 1 }
@@ -604,9 +626,22 @@ function Cmd-Uninstall {
     $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
     if ($userPath) { [Environment]::SetEnvironmentVariable('Path', (@($userPath.Split(';') | Where-Object { $_ -and $_ -ne $ToolDir }) -join ';'), 'User') }
     if (Test-Path $OldApp) { Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $OldApp }
-    # This command is still running from that folder, so delete it a moment after we exit
-    Start-Process cmd.exe -WindowStyle Hidden -ArgumentList "/c timeout /t 3 /nobreak >nul & rmdir /s /q `"$ToolDir`""
+    # PowerShell has already read this whole file, so the folder can be deleted while it runs
+    Set-Location $HOME
+    Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $ToolDir
+    if (Test-Path $ToolDir) { Warn "Couldn't delete $ToolDir - you can delete that folder yourself." }
     Good 'Meowcraft is uninstalled. Bye for now =^.^='
+    Write-Host ''
+}
+
+function Cmd-Upgrade {
+    Header
+    if (-not (Test-Path $ToolPath)) { Warn "Meowcraft isn't set up on this computer yet. Run:  meowcraft install"; exit 1 }
+    $new = Get-NewerTool
+    if (-not $new) { Good "You already have the newest version (v$ToolVersion). =^.^="; Write-Host ''; return }
+    [IO.File]::WriteAllText($ToolPath, $new, $Utf8)
+    Make-Icons   # refresh the icon too, in case it changed
+    Good 'Upgraded! The new version is used from now on.'
     Write-Host ''
 }
 
@@ -619,6 +654,7 @@ function Cmd-Help {
     Write-Host '  meowcraft reset                    start over with fresh mods (worlds + screenshots are kept)'
     Write-Host '  meowcraft reset --keep_settings    same, but also keep settings, keybinds, waypoints and server list'
     Write-Host '  meowcraft status                   what you have, and whether an update is waiting'
+    Write-Host '  meowcraft upgrade                  get the newest version of this command'
     Write-Host '  meowcraft uninstall                remove the icon, the Launcher profile and this command'
     Write-Host ''
 }
@@ -631,6 +667,7 @@ switch ($Cmd) {
     'switch'    { Cmd-Switch }
     'reset'     { Cmd-Reset }
     'status'    { Cmd-Status }
+    'upgrade'   { Cmd-Upgrade }
     'uninstall' { Cmd-Uninstall }
     default     { Cmd-Help }
 }
