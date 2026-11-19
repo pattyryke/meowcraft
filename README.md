@@ -4,20 +4,54 @@ The master list for the Meowcraft server: every client mod, resource pack, shade
 
 | File | What it is |
 | --- | --- |
-| `meowcraft.json` | **The master list.** Edit this to add or remove anything. |
-| `installer/` | The Windows + Mac client installer. It reads `meowcraft.json` from this repo, so friends always get the current list. |
+| `meowcraft.json` | **The master list.** Edit this to add or remove anything. Bump `"pack"` each time. |
+| `client/` | The `meowcraft` command for friends' computers (Windows + Mac), plus the one-line setups. |
+| `tools/meowcraft.py` | The `meowcraft` command for the Pi: checks and updates server plugins. |
+| `installer/` | The old zip installers. Only `servers.dat` is still used; the rest can go once nobody uses the old zips. |
 | `server/meowcraft_stats.zip` | Backup copy of the silly stats datapack. |
-| `tools/meowcraft.py` | Runs on the Pi. Shows which server plugins are out of date, updates them when you say so, and checks whether everything is ready for a new Minecraft version. |
 
-## One-time setup
+## For friends: setting up Meowcraft (once)
 
-1. Create a **public** GitHub repo named `meowcraft` and upload everything in this folder (drag and drop on the repo page works).
-2. Open `installer/manifest-url.txt` and replace `YOUR-GITHUB-NAME` with your GitHub username. Commit.
-3. Re-zip the `installer` folder for friends:
-   - **Core:** leave `variant.txt` as `core`.
-   - **Fancy:** change `variant.txt` to `fancy`.
+First open the Minecraft Launcher, log in, then close it. Then paste ONE line and press Enter:
 
-From then on, editing `meowcraft.json` on GitHub changes what everyone gets the next time they run the installer. No new zips needed.
+**Windows:** open **PowerShell** (Start menu, type "PowerShell") and paste:
+```
+irm https://raw.githubusercontent.com/pattyryke/meowcraft/main/client/get-windows.ps1 | iex
+```
+
+**Mac:** open **Terminal** (Cmd+Space, type "Terminal") and paste:
+```
+curl -fsSL https://raw.githubusercontent.com/pattyryke/meowcraft/main/client/get-mac.sh | bash
+```
+
+It asks Normal or Fancy, installs everything, and adds a cat **Play Meowcraft** icon (Windows: desktop, Mac: Dock).
+**From then on, always start Minecraft with that icon.** It grabs any new mods in a few seconds, then opens the Launcher.
+
+### The meowcraft command
+
+The icon is all most people need. For everything else, type these in a new PowerShell / Terminal window:
+
+| Command | What it does |
+| --- | --- |
+| `meowcraft play` | What the icon does: quick update check, then opens the Launcher |
+| `meowcraft update` | Check for new mods right now |
+| `meowcraft status` | What you have, and whether an update is waiting |
+| `meowcraft switch normal` / `switch fancy` | Change versions |
+| `meowcraft reset` | Start the Meowcraft folder over with fresh mods. Worlds and screenshots are always kept. |
+| `meowcraft reset --keep_settings` | Same, but also keeps game settings + keybinds, mod settings, minimap waypoints and the server list |
+| `meowcraft uninstall` | Remove the icon, the Launcher profile and the command (the game folder stays) |
+
+Reset moves everything it doesn't keep into `.minecraft/meowcraft-old` (Mac: `minecraft/meowcraft-old`) until the next reset, so nothing is lost by accident.
+Everything lives in a `.meowcraft` folder in your home folder.
+
+## Update night (Patrick)
+
+1. Edit `meowcraft.json` on GitHub and add 1 to `"pack"`. Commit.
+2. On the Pi, stop the server in Crafty, make a backup, then: `meowcraft update`
+3. Start the server. Post: "Meowcraft updated, just play like normal =^.^="
+
+Friends get it automatically the next time they click the icon. Anyone who forgets can still join, they just
+miss the new stuff. The Launcher profile shows the pack number (`Meowcraft · pack 5`), so it's easy to tell who's behind.
 
 ## Adding or removing things
 
@@ -38,41 +72,29 @@ From then on, editing `meowcraft.json` on GitHub changes what everyone gets the 
 
 `jar` is the start of the plugin's file name in your `plugins` folder. That's how the tool recognizes what's installed.
 
-**New Minecraft version:** change `"minecraft"` at the top of `meowcraft.json`. Run `ready` first, though (below).
+**New Minecraft version:** change `"minecraft"` at the top of `meowcraft.json` (and bump `"pack"`). Run `ready` first, though (below).
 
-## The Pi tool
+## The Pi command
 
-Get it on the Pi once:
+One time, on the Pi:
 ```
-git clone https://github.com/pattyryke/meowcraft ~/meowcraft
+git clone https://github.com/pattyryke/meowcraft ~/meowcraft      # skip if it's already there
+python3 ~/meowcraft/tools/meowcraft.py setup
+source ~/.bashrc
 ```
-Find your server's plugins folder (the long ID is your Crafty server):
-```
-ls ~/crafty/docker/servers/
-```
+After that, from anywhere:
 
-**What's out of date?**
-```
-python3 ~/meowcraft/tools/meowcraft.py status --plugins ~/crafty/docker/servers/<id>/plugins
-```
-- ✓ up to date · ⬆ update available · + listed but not installed · … no build for your Minecraft version yet
-- It also lists jars in your plugins folder that aren't in `meowcraft.json`, so nothing goes untracked.
+| Command | What it does |
+| --- | --- |
+| `meowcraft status` | Which server plugins are out of date: ✓ up to date · ⬆ update available · + listed but not installed · … no build yet. Also lists jars that aren't in `meowcraft.json`. |
+| `meowcraft update` | Same report, then asks before downloading. Old jars go to `plugins/_old/<date>/` so you can undo. Stop the server in Crafty first. |
+| `meowcraft ready 26.4` | Checks every client mod, resource pack, shader and server plugin for a new Minecraft version: "25 of 28 ready." |
 
-**Update plugins** (stop the server in Crafty and make a backup first):
-```
-python3 ~/meowcraft/tools/meowcraft.py update --plugins ~/crafty/docker/servers/<id>/plugins
-```
-It shows the report, asks before downloading, and moves the old jars into `plugins/_old/<date>/` so you can undo.
-
-**Ready for a new Minecraft version?**
-```
-python3 ~/meowcraft/tools/meowcraft.py ready 26.4
-```
-Checks every client mod, resource pack, shader and server plugin and gives you a score, like "25 of 28 ready."
-
-**Get the latest list after editing on GitHub:** `cd ~/meowcraft && git pull`
-
-If you get "Permission denied," Crafty owns the plugins folder. Run the same command with `sudo` in front.
+- Every command pulls the newest `meowcraft.json` from GitHub first, so there's no separate `git pull` step.
+- It finds the Crafty plugins folder by itself (asks once if there's more than one server) and remembers it.
+  Use `--plugins <folder>` to point it somewhere else.
+- If Crafty owns the plugins folder, it asks for your password and re-runs with `sudo` on its own.
+- To remove a plugin: delete its line from `meowcraft.json`, then move its jar out of the plugins folder (the tool never deletes plugins).
 
 ## Notes
 - The tool prefers stable releases over betas, everywhere.
