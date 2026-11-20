@@ -10,7 +10,7 @@ The master list for the Meowcraft server: every client mod, resource pack, shade
 | `meowcraft-server-tools/meowcraft.py` | The `meowcraft` command for the Pi: checks and updates server plugins. |
 | `meowcraft-server-tools/datapacks/` | Backup copy of the silly stats datapack. |
 | `site/` | The website (pattyryke.github.io/meowcraft). The only file to edit is `site/config.js`. |
-| `meowcraft-server-tools/caddy/` | Puts the BlueMap live map on https so the website can show it. |
+| `meowcraft-server-tools/caddy/` | The Caddy block that puts the BlueMap live map on https. |
 | `.github/scripts/build-mrpack.py` | Builds the `.mrpack` downloads for the Releases page (GitHub runs it for you). |
 
 ## For friends: setting up Meowcraft (once)
@@ -132,24 +132,21 @@ The only thing to edit is `site/config.js`: the server address and the map addre
 
 ## Map on https (Caddy, on the Pi)
 
-Browsers only show the BlueMap map on the website if it's on https. Caddy does that, and DuckDNS keeps the address
-pointing at home even when your internet provider changes your IP.
+Browsers only show the BlueMap map on the website if it's on https. The Caddy that already runs on the Pi
+(`~/docker/core/caddy`) does that at **https://map.meowcraft-server.duckdns.org**. The DuckDNS container keeps
+the address pointing at home. The block it needs is in `meowcraft-server-tools/caddy/Caddyfile`.
 
-One time:
-1. On [duckdns.org](https://www.duckdns.org), log in, add a name (like `meowcraft`) and copy the **token** at the top.
-2. On your router, forward port **443** (TCP and UDP) to the Pi, and port **80** too if it lets you.
-   Keep 25565 forwarded for Minecraft. Don't forward BlueMap's port (8100): from now on the map goes through Caddy.
-3. On the Pi:
-   ```
-   cd ~/docker/meowcraft/tools/meowcraft-server-tools/caddy
-   cp .env.example .env && nano .env        # fill in your DuckDNS name and token
-   docker compose up -d
-   ```
-4. After a minute, open `https://<your name>.duckdns.org` and the map should load with a padlock.
-   If it doesn't, `docker compose logs caddy` says why (usually port 443 isn't forwarded yet).
-5. Put both addresses in `site/config.js` on GitHub. Friends now join Minecraft with `<your name>.duckdns.org`.
+One time, on the Pi:
+```
+cat ~/docker/meowcraft/tools/meowcraft-server-tools/caddy/Caddyfile | sudo tee -a ~/docker/core/caddy/Caddyfile
+docker exec caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+docker exec caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
+```
+After a minute, open https://map.meowcraft-server.duckdns.org (with the Minecraft server running) and the map
+should load with a padlock. If it doesn't, `docker logs caddy --tail 30` says why.
 
-Caddy renews the https certificate by itself. `git pull` + `docker compose up -d` picks up any changes to the setup.
+- The map only works while the Minecraft server is running: BlueMap's web server stops with it.
+- Port 8100 doesn't need to be forwarded on the router: the map goes through Caddy on 443.
 
 ## Notes
 - The tool prefers stable releases over betas, everywhere.

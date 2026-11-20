@@ -1,10 +1,13 @@
-# https://<MEOWCRAFT_HOST> -> BlueMap on the Pi. Caddy gets and renews the certificate by itself.
-# Values come from .env (copy .env.example to .env and fill it in).
-{$MEOWCRAFT_HOST} {
+# The live map block for the Caddy that already runs on the Pi (~/docker/core/caddy/Caddyfile).
+# This is a copy for reference: the README ("Map on https") says how to add it there.
+# DuckDNS sends every *.meowcraft-server.duckdns.org name home, so map. needs no extra DuckDNS setup.
+
+map.meowcraft-server.duckdns.org {
 	encode zstd gzip
 
 	# Lets the Meowcraft website read the live player list from BlueMap.
-	header Access-Control-Allow-Origin "{$SITE_ORIGIN:https://pattyryke.github.io}"
+	header Access-Control-Allow-Origin "https://pattyryke.github.io"
 
-	reverse_proxy host.docker.internal:{$BLUEMAP_PORT:8100}
+	# BlueMap's web server, reached through the Pi's home network address.
+	reverse_proxy 192.168.0.69:8100
 }

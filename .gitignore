@@ -4,6 +4,3 @@ __pycache__/
 .DS_Store
 plugins/
 *.jar
-
-# Caddy secrets on the Pi
-meowcraft-server-tools/caddy/.env

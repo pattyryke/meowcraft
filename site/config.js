@@ -6,11 +6,11 @@ window.MEOWCRAFT = {
 
   // Public address friends join with, e.g. "meowcraft.duckdns.org" (add ":port" if it isn't 25565).
   // Leave empty to show "ask Patrick for the address" and hide the online status.
-  server: "",
+  server: "meowcraft-server.duckdns.org",
 
   // BlueMap over https (the Caddy setup), e.g. "https://meowcraft.duckdns.org".
   // Leave empty to show "map coming soon".
-  map: "",
+  map: "https://map.meowcraft-server.duckdns.org",
 
   // Which BlueMap map the live player list reads (BlueMap's default overworld is "world").
   mapId: "world",
