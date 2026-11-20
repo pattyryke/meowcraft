@@ -44,6 +44,7 @@
       { "name": "EssentialsX",             "source": "manual",   "notes": "Dev build 2.22.1-dev from ci.ender.zone (2.22.0 doesn't support 26.3). Once 2.22.1 is released, switch back to: \"source\": \"github\", \"repo\": \"EssentialsX/Essentials\", \"asset\": \"^EssentialsX-[0-9].*\\\\.jar$\"", "jar": "^EssentialsX-[0-9]" },
       { "name": "EssentialsXChat",         "source": "manual",   "notes": "Same as EssentialsX. github asset: ^EssentialsXChat-.*\\\\.jar$", "jar": "^EssentialsXChat" },
       { "name": "EssentialsXSpawn",        "source": "manual",   "notes": "Same as EssentialsX. github asset: ^EssentialsXSpawn-.*\\\\.jar$", "jar": "^EssentialsXSpawn" },
+      { "name": "squaremap",               "source": "modrinth", "project": "squaremap",          "jar": "^squaremap" },
       { "name": "Chunky",                  "source": "modrinth", "project": "chunky",             "jar": "^Chunky" },
       { "name": "Simple Voice Chat",       "source": "modrinth", "project": "simple-voice-chat",  "jar": "^voicechat-bukkit" },
       { "name": "FetchPets",               "source": "modrinth", "project": "fetchpets",          "jar": "^fetchpets" },
