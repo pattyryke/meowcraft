@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Meowcraft</title>
+  <meta name="description" content="The Meowcraft Minecraft server: one-line setup, pack downloads, server status and everything in the pack.">
+  <meta property="og:title" content="Meowcraft =^.^=">
+  <meta property="og:description" content="Meow meow. Meow... Meowcraft. Set up in one line, then just click the cat.">
+  <meta property="og:image" content="cat-256.png">
+  <meta name="theme-color" content="#2a1a45">
+  <link rel="icon" href="cat-256.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="nav">
+    <a class="brand" href="#top"><img src="cat-256.png" alt="" width="28" height="28">Meowcraft</a>
+    <nav>
+      <a href="#join">Join</a>
+      <a href="#downloads">Downloads</a>
+      <a href="#inside">What's inside</a>
+      <a href="#help">Help</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <img class="hero-cat" src="cat-256.png" alt="Pixel art orange cat" width="160" height="160">
+      <div>
+        <h1>Meowcraft <span class="face">=^.^=</span></h1>
+        <p class="tagline">Meow meow. Meow... Meowcraft.</p>
+        <p class="lede">Our little Minecraft server, with voice chat, a minimap, emotes and optional shaders. Set it up once, then just click the cat.</p>
+        <div class="chips">
+          <span class="chip" id="status-chip"><span class="dot"></span><span id="status-text">Checking the server…</span></span>
+          <span class="chip" id="version-chip">Minecraft …</span>
+        </div>
+        <div class="address" id="address-box" hidden>
+          <span class="label">Server address</span>
+          <code id="address"></code>
+          <button class="copy" data-copy-from="address">Copy</button>
+        </div>
+        <p class="online-names" id="online-names" hidden></p>
+        <div class="cta">
+          <a class="btn primary" href="#join">Get set up</a>
+          <a class="btn" href="#downloads">Downloads</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="join">
+      <h2>Get set up <small>once, about 2 minutes</small></h2>
+      <div class="tabs" role="tablist">
+        <button role="tab" data-tab="windows">Windows</button>
+        <button role="tab" data-tab="mac">Mac</button>
+        <button role="tab" data-tab="other">Other launchers</button>
+      </div>
+
+      <div class="panel" data-panel="windows">
+        <ol class="steps">
+          <li>Open the <b>Minecraft Launcher</b>, log in, then close it.</li>
+          <li>Open <b>PowerShell</b>: Start menu, type <kbd>PowerShell</kbd>, press Enter.</li>
+          <li>Paste this line and press Enter:
+            <div class="code"><code id="cmd-windows">irm https://raw.githubusercontent.com/pattyryke/meowcraft/main/meowcraft-tools/get-windows.ps1 | iex</code><button class="copy" data-copy-from="cmd-windows">Copy</button></div>
+          </li>
+          <li>Pick <b>Normal</b> or <b>Fancy</b>. A cat <b>Play Meowcraft</b> icon shows up on your desktop.</li>
+        </ol>
+      </div>
+
+      <div class="panel" data-panel="mac">
+        <ol class="steps">
+          <li>Open the <b>Minecraft Launcher</b>, log in, then close it.</li>
+          <li>Open <b>Terminal</b>: press <kbd>Cmd</kbd>+<kbd>Space</kbd>, type <kbd>Terminal</kbd>, press Enter.</li>
+          <li>Paste this line and press Enter:
+            <div class="code"><code id="cmd-mac">curl -fsSL https://raw.githubusercontent.com/pattyryke/meowcraft/main/meowcraft-tools/get-mac.sh | bash</code><button class="copy" data-copy-from="cmd-mac">Copy</button></div>
+          </li>
+          <li>Pick <b>Normal</b> or <b>Fancy</b>. A cat <b>Play Meowcraft</b> icon shows up in your Dock.</li>
+        </ol>
+      </div>
+
+      <div class="panel" data-panel="other">
+        <ol class="steps">
+          <li>Use the <b>Modrinth App</b>, <b>Prism Launcher</b> or <b>ATLauncher</b>? Download a pack file from <a href="#downloads">Downloads</a> below.</li>
+          <li>In your launcher, choose <b>Add instance → Import</b> and pick the file.</li>
+          <li>Play. The Meowcraft server is already in the server list.</li>
+        </ol>
+        <p class="note">Pack files don't update by themselves. When the pack number goes up, import the new one (or use your launcher's update button).</p>
+      </div>
+
+      <div class="callout">
+        <img src="cat-256.png" alt="" width="40" height="40">
+        <p><b>From then on, always start Minecraft with the cat icon.</b> It grabs any new mods in a few seconds, then opens the Launcher like normal.</p>
+      </div>
+    </section>
+
+    <section id="downloads">
+      <h2>Pick your Meowcraft <small id="pack-label"></small></h2>
+      <div class="variants">
+        <article class="variant">
+          <h3>Normal</h3>
+          <p>Fast and smooth on any computer. Pick this if you're not sure.</p>
+          <ul class="perks" id="perks-normal"></ul>
+          <a class="btn primary dl" data-file="Meowcraft-Normal.mrpack" href="#">Download Normal .mrpack</a>
+        </article>
+        <article class="variant fancy">
+          <h3>Fancy <span class="badge">✨</span></h3>
+          <p>Everything in Normal, plus shaders and smoother animations. Needs a powerful computer.</p>
+          <ul class="perks" id="perks-fancy"></ul>
+          <a class="btn primary dl" data-file="Meowcraft-Fancy.mrpack" href="#">Download Fancy .mrpack</a>
+        </article>
+      </div>
+      <p class="note" id="dl-note">The one-line setup asks which one you want, and you can switch any time with <code>meowcraft switch normal</code> / <code>fancy</code>. The .mrpack files are only for other launchers.</p>
+    </section>
+
+    <section id="inside">
+      <h2>What's inside</h2>
+      <p class="note">Built live from <a id="list-link" href="#">meowcraft.json</a>, so this is always what the pack has right now.</p>
+      <h3 class="sub">Mods</h3>
+      <div class="grid" id="mods"><p class="loading">Loading the mod list…</p></div>
+      <h3 class="sub">Shaders <span class="tag fancy-tag">Fancy</span></h3>
+      <div class="grid" id="shaders"></div>
+      <h3 class="sub">On the server</h3>
+      <ul class="plugins" id="plugins"></ul>
+    </section>
+
+    <section id="help">
+      <h2>Help</h2>
+      <div class="help-cols">
+        <div>
+          <h3 class="sub">Handy keys</h3>
+          <table class="keys">
+            <tr><td><kbd>Caps Lock</kbd></td><td>Push to talk (voice chat)</td></tr>
+            <tr><td><kbd>V</kbd></td><td>Voice chat settings</td></tr>
+            <tr><td><kbd>M</kbd></td><td>World map</td></tr>
+            <tr><td><kbd>C</kbd></td><td>Zoom</td></tr>
+            <tr><td><kbd>B</kbd></td><td>Emote wheel</td></tr>
+          </table>
+          <p class="note">Change any of these in Options → Controls → Key Binds.</p>
+        </div>
+        <div>
+          <h3 class="sub">The meowcraft command</h3>
+          <p class="note">The cat icon is all most people need. For anything else, type these in a new PowerShell / Terminal window.</p>
+          <table class="cmds">
+            <tr><td><code>meowcraft update</code></td><td>Check for new mods right now</td></tr>
+            <tr><td><code>meowcraft status</code></td><td>What you have, and whether an update is waiting</td></tr>
+            <tr><td><code>meowcraft switch fancy</code></td><td>Change versions (or <code>switch normal</code>)</td></tr>
+            <tr><td><code>meowcraft reset</code></td><td>Start fresh. Worlds and screenshots are always kept.</td></tr>
+            <tr><td><code>meowcraft reset --keep_settings</code></td><td>Start fresh but keep settings, keybinds, waypoints and servers</td></tr>
+            <tr><td><code>meowcraft uninstall</code></td><td>Remove the icon, Launcher profile and command</td></tr>
+          </table>
+        </div>
+      </div>
+      <details>
+        <summary>“Mismatched mods” or I can't join</summary>
+        <p>Run <code>meowcraft update</code> (or just click the cat icon again). If it still won't work, <code>meowcraft reset --keep_settings</code> gives you a clean folder and keeps your settings.</p>
+      </details>
+      <details>
+        <summary>The game is slow on Fancy</summary>
+        <p>Press <kbd>Esc</kbd> → Options → Video Settings → Shader Packs and pick <b>Meowcraft Low</b>, or turn shaders off. Or switch for good: <code>meowcraft switch normal</code>.</p>
+      </details>
+      <details>
+        <summary>Nobody can hear me</summary>
+        <p>Hold <kbd>Caps Lock</kbd> while talking, and press <kbd>V</kbd> to check that the right microphone is picked and the volume bar moves.</p>
+      </details>
+    </section>
+  </main>
+
+  <footer>
+    <img src="cat-256.png" alt="" width="20" height="20">
+    <span>Meowcraft · not affiliated with Mojang or Microsoft · <a id="repo-link" href="#">GitHub</a></span>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

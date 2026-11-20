@@ -9,6 +9,8 @@ The master list for the Meowcraft server: every client mod, resource pack, shade
 | `meowcraft-tools/servers.dat` | The server list friends start with (just the Meowcraft server). |
 | `meowcraft-server-tools/meowcraft.py` | The `meowcraft` command for the Pi: checks and updates server plugins. |
 | `meowcraft-server-tools/datapacks/` | Backup copy of the silly stats datapack. |
+| `site/` | The website (pattyryke.github.io/meowcraft). The only file to edit is `site/config.js`. |
+| `.github/scripts/build-mrpack.py` | Builds the `.mrpack` downloads for the Releases page (GitHub runs it for you). |
 
 ## For friends: setting up Meowcraft (once)
 
@@ -26,6 +28,13 @@ curl -fsSL https://raw.githubusercontent.com/pattyryke/meowcraft/main/meowcraft-
 
 It asks Normal or Fancy, installs everything, and adds a cat **Play Meowcraft** icon (Windows: desktop, Mac: Dock).
 **From then on, always start Minecraft with that icon.** It grabs any new mods in a few seconds, then opens the Launcher.
+
+### Using another launcher instead (Modrinth App, Prism, ATLauncher)
+
+Download **Meowcraft-Normal.mrpack** or **Meowcraft-Fancy.mrpack** from the newest
+[release](https://github.com/pattyryke/meowcraft/releases/latest) and import it in your launcher.
+GitHub rebuilds them by itself every time `meowcraft.json` changes. These don't auto-update like the icon does:
+when the pack number goes up, import the new file again (or use your launcher's "update modpack" button).
 
 ### The meowcraft command
 
@@ -113,6 +122,12 @@ After that, from anywhere:
   Use `--plugins <folder>` to point it somewhere else.
 - If Crafty owns the plugins folder, it asks for your password and re-runs with `sudo` on its own.
 - To remove a plugin: delete its line from `meowcraft.json`, then move its jar out of the plugins folder (the tool never deletes plugins).
+
+## The website
+
+**https://pattyryke.github.io/meowcraft/** has the setup steps, the pack downloads, whether the server is online and everything in the pack.
+It reads `meowcraft.json` and the Releases page by itself, so update night doesn't involve it at all.
+The only thing to edit is `site/config.js`: the server address.
 
 ## Notes
 - The tool prefers stable releases over betas, everywhere.
