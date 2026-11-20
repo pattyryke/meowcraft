@@ -79,6 +79,10 @@
             <div class="code"><code id="cmd-mac">curl -fsSL https://raw.githubusercontent.com/pattyryke/meowcraft/main/meowcraft-tools/get-mac.sh | bash</code><button class="copy" data-copy-from="cmd-mac">Copy</button></div>
           </li>
           <li>Pick <b>Normal</b> or <b>Fancy</b>. A cat <b>Play Meowcraft</b> icon shows up in your Dock.</li>
+          <li><b>Let Minecraft use your microphone</b> (for voice chat). The Minecraft Launcher on Mac doesn't ask for it by itself, so quit Minecraft, then paste this in Terminal and press Enter:
+            <div class="code"><code id="cmd-mac-mic">sudo /usr/libexec/PlistBuddy -c "Add :NSMicrophoneUsageDescription string 'Minecraft voice chat'" /Applications/Minecraft.app/Contents/Info.plist; sudo codesign --force --deep --sign - /Applications/Minecraft.app</code><button class="copy" data-copy-from="cmd-mac-mic">Copy</button></div>
+            It asks for your Mac password, possibly several times. That's normal. Next time you join and press <kbd>V</kbd>, click <b>Allow</b> when your Mac asks about the microphone.
+          </li>
         </ol>
       </div>
 
@@ -173,7 +177,13 @@
       </details>
       <details>
         <summary>Nobody can hear me</summary>
-        <p>Hold <kbd>Caps Lock</kbd> while talking, and press <kbd>V</kbd> to check that the right microphone is picked and the volume bar moves.</p>
+        <p>Hold <kbd>Caps Lock</kbd> while talking, and press <kbd>V</kbd> to check that the right microphone is picked and the volume bar moves. On a Mac, see the next question.</p>
+      </details>
+      <details>
+        <summary>Mac: Minecraft can't use my microphone</summary>
+        <p>The Minecraft Launcher on Mac doesn't ask for the microphone, so your Mac quietly blocks it and Minecraft isn't even listed in System Settings → Privacy &amp; Security → Microphone. Quit Minecraft, then paste this in Terminal and press Enter:</p>
+        <div class="code"><code id="cmd-mac-mic-help">sudo /usr/libexec/PlistBuddy -c "Add :NSMicrophoneUsageDescription string 'Minecraft voice chat'" /Applications/Minecraft.app/Contents/Info.plist; sudo codesign --force --deep --sign - /Applications/Minecraft.app</code><button class="copy" data-copy-from="cmd-mac-mic-help">Copy</button></div>
+        <p>It asks for your Mac password, possibly several times. That's normal. Then join, press <kbd>V</kbd>, and click <b>Allow</b> when your Mac asks. A Minecraft Launcher update can undo this: if voice chat stops hearing you after one, run it again. (Using the Modrinth App or Prism instead? They ask for the microphone properly, so you don't need this.)</p>
       </details>
     </section>
   </main>

@@ -26,6 +26,15 @@ irm https://raw.githubusercontent.com/pattyryke/meowcraft/main/meowcraft-tools/g
 curl -fsSL https://raw.githubusercontent.com/pattyryke/meowcraft/main/meowcraft-tools/get-mac.sh | bash
 ```
 
+**Mac, once more for voice chat:** the Minecraft Launcher on Mac never asks for the microphone, so the Mac silently blocks it
+(and Minecraft doesn't even show up in System Settings → Privacy & Security → Microphone). Quit Minecraft, then paste:
+```
+sudo /usr/libexec/PlistBuddy -c "Add :NSMicrophoneUsageDescription string 'Minecraft voice chat'" /Applications/Minecraft.app/Contents/Info.plist; sudo codesign --force --deep --sign - /Applications/Minecraft.app
+```
+It asks for your Mac password, possibly several times. That's normal. Next time you join and press **V**, click **Allow**.
+A Minecraft Launcher update can undo this; if voice chat stops hearing you after one, run it again.
+The Modrinth App and Prism ask for the microphone properly, so they don't need this.
+
 It asks Normal or Fancy, installs everything, and adds a cat **Play Meowcraft** icon (Windows: desktop, Mac: Dock).
 **From then on, always start Minecraft with that icon.** It grabs any new mods in a few seconds, then opens the Launcher.
 
