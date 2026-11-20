@@ -45,8 +45,6 @@
       { "name": "EssentialsXChat",         "source": "manual",   "notes": "Same as EssentialsX. github asset: ^EssentialsXChat-.*\\\\.jar$", "jar": "^EssentialsXChat" },
       { "name": "EssentialsXSpawn",        "source": "manual",   "notes": "Same as EssentialsX. github asset: ^EssentialsXSpawn-.*\\\\.jar$", "jar": "^EssentialsXSpawn" },
       { "name": "Chunky",                  "source": "modrinth", "project": "chunky",             "jar": "^Chunky" },
-      { "name": "BlueMap",                 "source": "modrinth", "project": "bluemap",            "jar": "^bluemap-[0-9]" },
-      { "name": "BlueMapFilteredEntities", "source": "github",   "repo": "TechnicJelle/BlueMapFilteredEntities", "asset": "\\.jar$", "jar": "^BlueMapFilteredEntities" },
       { "name": "Simple Voice Chat",       "source": "modrinth", "project": "simple-voice-chat",  "jar": "^voicechat-bukkit" },
       { "name": "FetchPets",               "source": "modrinth", "project": "fetchpets",          "jar": "^fetchpets" },
       { "name": "ClientSort Paper",        "source": "modrinth", "project": "clientsort-paper",   "jar": "^clientsort" },
