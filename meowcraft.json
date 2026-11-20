@@ -47,13 +47,14 @@
       { "name": "Chunky",                  "source": "modrinth", "project": "chunky",             "jar": "^Chunky" },
       { "name": "BlueMap",                 "source": "modrinth", "project": "bluemap",            "jar": "^bluemap-[0-9]" },
       { "name": "BlueMapFilteredEntities", "source": "github",   "repo": "TechnicJelle/BlueMapFilteredEntities", "asset": "\\.jar$", "jar": "^BlueMapFilteredEntities" },
-      { "name": "Simple Voice Chat",       "source": "modrinth", "project": "simple-voice-chat",  "jar": "^voicechat" },
+      { "name": "Simple Voice Chat",       "source": "modrinth", "project": "simple-voice-chat",  "jar": "^voicechat-bukkit" },
       { "name": "FetchPets",               "source": "modrinth", "project": "fetchpets",          "jar": "^fetchpets" },
       { "name": "ClientSort Paper",        "source": "modrinth", "project": "clientsort-paper",   "jar": "^clientsort" },
       { "name": "Emotecraft",              "source": "modrinth", "project": "emotecraft",         "jar": "^emotecraft" },
       { "name": "ModularPacks",            "source": "modrinth", "project": "modularpacks",       "jar": "^ModularPacks" },
       { "name": "GravesX",                 "source": "modrinth", "project": "gravesx",            "jar": "^GravesX" },
       { "name": "Timberella",              "source": "hangar",   "project": "timberella",         "jar": "^timberella" },
+      { "name": "Voice Chat Interaction",  "source": "modrinth", "project": "voicechat-interaction", "notes": "PixoVoid/SlimeNest Paper port of henkelmax's Fabric mod. 1.0.3 is tagged up to 26.2 but runs fine on 26.3", "jar": "^voicechat-interaction" },
       { "name": "Vault",                   "source": "github",   "repo": "MilkBowl/Vault", "asset": "^Vault\\.jar$", "jar": "^Vault[-.]" }
     ],
     "datapacks": [
