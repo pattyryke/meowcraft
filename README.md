@@ -10,7 +10,6 @@ The master list for the Meowcraft server: every client mod, resource pack, shade
 | `meowcraft-server-tools/meowcraft.py` | The `meowcraft` command for the Pi: checks and updates server plugins. |
 | `meowcraft-server-tools/datapacks/` | Backup copy of the silly stats datapack. |
 | `site/` | The website (pattyryke.github.io/meowcraft). The only file to edit is `site/config.js`. |
-| `meowcraft-server-tools/caddy/` | The Caddy block that puts the BlueMap live map on https. |
 | `.github/scripts/build-mrpack.py` | Builds the `.mrpack` downloads for the Releases page (GitHub runs it for you). |
 
 ## For friends: setting up Meowcraft (once)
@@ -126,27 +125,9 @@ After that, from anywhere:
 
 ## The website
 
-**https://pattyryke.github.io/meowcraft/** has the setup steps, the pack downloads, the live map and everything in the pack.
+**https://pattyryke.github.io/meowcraft/** has the setup steps, the pack downloads, whether the server is online and everything in the pack.
 It reads `meowcraft.json` and the Releases page by itself, so update night doesn't involve it at all.
-The only thing to edit is `site/config.js`: the server address and the map address.
-
-## Map on https (Caddy, on the Pi)
-
-Browsers only show the BlueMap map on the website if it's on https. The Caddy that already runs on the Pi
-(`~/docker/core/caddy`) does that at **https://map.meowcraft-server.duckdns.org**. The DuckDNS container keeps
-the address pointing at home. The block it needs is in `meowcraft-server-tools/caddy/Caddyfile`.
-
-One time, on the Pi:
-```
-cat ~/docker/meowcraft/tools/meowcraft-server-tools/caddy/Caddyfile | sudo tee -a ~/docker/core/caddy/Caddyfile
-docker exec caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
-docker exec caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
-```
-After a minute, open https://map.meowcraft-server.duckdns.org (with the Minecraft server running) and the map
-should load with a padlock. If it doesn't, `docker logs caddy --tail 30` says why.
-
-- The map only works while the Minecraft server is running: BlueMap's web server stops with it.
-- Port 8100 doesn't need to be forwarded on the router: the map goes through Caddy on 443.
+The only thing to edit is `site/config.js`: the server address.
 
 ## Notes
 - The tool prefers stable releases over betas, everywhere.

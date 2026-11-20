@@ -1,6 +1,6 @@
 // Meowcraft website. Reads meowcraft.json, the latest release, Modrinth and the server status live.
 (() => {
-  const C = Object.assign({ repo: "pattyryke/meowcraft", server: "", map: "", mapId: "world" }, window.MEOWCRAFT || {});
+  const C = Object.assign({ repo: "pattyryke/meowcraft", server: "" }, window.MEOWCRAFT || {});
   const RAW = `https://raw.githubusercontent.com/${C.repo}/main`;
   const $ = (id) => document.getElementById(id);
   const el = (tag, props = {}, kids = []) => {
@@ -13,7 +13,6 @@
     if (!r.ok) throw new Error(`${r.status} ${url}`);
     return r.json();
   };
-  const mapBase = C.map.replace(/\/+$/, "");
 
   // ---------- Copy buttons ----------
   document.addEventListener("click", async (e) => {
@@ -84,34 +83,6 @@
       buttons.forEach((b) => { b.classList.add("disabled"); b.removeAttribute("href"); b.textContent = "Pack file coming soon"; });
     }
   })();
-
-  // ---------- Live map ----------
-  if (mapBase) {
-    if (location.protocol === "https:" && mapBase.startsWith("http:")) {
-      console.warn("The map address is http, so browsers won't show it on this https page. Use the Caddy https address.");
-    }
-    $("map-empty").remove();
-    $("map-wrap").append(el("iframe", { src: mapBase, title: "Meowcraft live map (BlueMap)", loading: "lazy", allow: "fullscreen" }));
-    $("map-open").href = mapBase;
-    $("map-foot").hidden = false;
-    const playersBox = $("map-players");
-    const loadPlayers = async () => {
-      try {
-        const data = await getJson(`${mapBase}/maps/${encodeURIComponent(C.mapId)}/live/players.json`);
-        const list = (data.players || []);
-        playersBox.replaceChildren(...(list.length ? list.map((p) => {
-          const img = el("img", { src: `${mapBase}/maps/${encodeURIComponent(C.mapId)}/assets/playerheads/${p.uuid}.png`, alt: "", width: 20, height: 20 });
-          img.onerror = () => { img.src = "cat-256.png"; };
-          const where = p.foreign ? "in another dimension" : `${Math.round(p.position.x)}, ${Math.round(p.position.z)}`;
-          return el("span", { className: "player" }, [img, el("b", { textContent: p.name }), el("small", { textContent: where })]);
-        }) : [el("span", { className: "note", textContent: "Nobody's in the overworld right now." })]));
-      } catch {
-        playersBox.replaceChildren(el("span", { className: "note", textContent: "Live players show up here once the map is on https." }));
-      }
-    };
-    loadPlayers();
-    setInterval(loadPlayers, 10000);
-  }
 
   // ---------- What's inside (meowcraft.json + Modrinth) ----------
   const PERKS = {
