@@ -61,12 +61,12 @@ ACHIEVEMENTS = [
 CHAT_COLOR = {"fall": "red", "sneak": "dark_green", "nap": "aqua", "jump": "light_purple", "dirt": "gold", "drop": "yellow",
               "lives": "dark_red", "fish": "blue", "cake": "light_purple", "bred": "red", "creeper": "green",
               "trade": "dark_aqua", "puffer": "gold"}
-# The little tag shown in front of a player's name when they wear a title (/trigger title). Not bold.
-TAG = {"fall1": "☁", "fall2": "☄", "sneak1": "ʰᵉʰ", "sneak2": "✧ʰᵉʰ✧", "nap1": "ᶻᶻ", "nap2": "☾ᶻᶻᶻ",
-       "jump1": "⇡", "jump2": "ʙᴏɪɴɢ", "dirt1": "▪", "dirt2": "♛▪", "drop1": "ᵒᵒᵖˢ", "drop2": "ᵒᵒᵖˢ!",
-       "lives1": "☠", "lives2": "☠☠", "fish1": "><>", "fish2": "≋><>", "cake1": "ᶜᵃᵏᵉ", "cake2": "♚ᶜᵃᵏᵉ",
-       "bred1": "♡", "bred2": "♡♡", "creeper1": "✸", "creeper2": "ᵇᵒᵒᵐ", "trade1": "ʰᵐᵐ", "trade2": "ʰᵐᵐᵐᵐ",
-       "puffer1": "ᵇˡᵉʰ"}
+# The little symbol shown in front of a player's name when they wear a title (/trigger title). Not bold.
+TAG = {"fall1": "☁", "fall2": "☄", "sneak1": "✧", "sneak2": "✦", "nap1": "☾", "nap2": "✩☾",
+       "jump1": "⇡", "jump2": "⇈", "dirt1": "▪", "dirt2": "♛", "drop1": "↓", "drop2": "⇊",
+       "lives1": "☠", "lives2": "☠☠", "fish1": "><>", "fish2": "≋><>", "cake1": "♨", "cake2": "♚",
+       "bred1": "♡", "bred2": "♥", "creeper1": "✸", "creeper2": "✹", "trade1": "◊", "trade2": "◆",
+       "puffer1": "✺"}
 SECRET = {"puffer1"}   # shown as ??? in /trigger achievements until earned
 
 # Rewards: tier 1 (and the secret one) = 5 XP levels + 8 cookies. Tier 2 = 15 XP levels + a glowing trophy item.
