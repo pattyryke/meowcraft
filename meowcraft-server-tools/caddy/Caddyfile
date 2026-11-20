@@ -1,0 +1,10 @@
+# https://<MEOWCRAFT_HOST> -> BlueMap on the Pi. Caddy gets and renews the certificate by itself.
+# Values come from .env (copy .env.example to .env and fill it in).
+{$MEOWCRAFT_HOST} {
+	encode zstd gzip
+
+	# Lets the Meowcraft website read the live player list from BlueMap.
+	header Access-Control-Allow-Origin "{$SITE_ORIGIN:https://pattyryke.github.io}"
+
+	reverse_proxy host.docker.internal:{$BLUEMAP_PORT:8100}
+}

@@ -9,6 +9,8 @@ The master list for the Meowcraft server: every client mod, resource pack, shade
 | `meowcraft-tools/servers.dat` | The server list friends start with (just the Meowcraft server). |
 | `meowcraft-server-tools/meowcraft.py` | The `meowcraft` command for the Pi: checks and updates server plugins. |
 | `meowcraft-server-tools/datapacks/` | Backup copy of the silly stats datapack. |
+| `site/` | The website (pattyryke.github.io/meowcraft). The only file to edit is `site/config.js`. |
+| `meowcraft-server-tools/caddy/` | Puts the BlueMap live map on https so the website can show it. |
 | `.github/scripts/build-mrpack.py` | Builds the `.mrpack` downloads for the Releases page (GitHub runs it for you). |
 
 ## For friends: setting up Meowcraft (once)
@@ -121,6 +123,33 @@ After that, from anywhere:
   Use `--plugins <folder>` to point it somewhere else.
 - If Crafty owns the plugins folder, it asks for your password and re-runs with `sudo` on its own.
 - To remove a plugin: delete its line from `meowcraft.json`, then move its jar out of the plugins folder (the tool never deletes plugins).
+
+## The website
+
+**https://pattyryke.github.io/meowcraft/** has the setup steps, the pack downloads, the live map and everything in the pack.
+It reads `meowcraft.json` and the Releases page by itself, so update night doesn't involve it at all.
+The only thing to edit is `site/config.js`: the server address and the map address.
+
+## Map on https (Caddy, on the Pi)
+
+Browsers only show the BlueMap map on the website if it's on https. Caddy does that, and DuckDNS keeps the address
+pointing at home even when your internet provider changes your IP.
+
+One time:
+1. On [duckdns.org](https://www.duckdns.org), log in, add a name (like `meowcraft`) and copy the **token** at the top.
+2. On your router, forward port **443** (TCP and UDP) to the Pi, and port **80** too if it lets you.
+   Keep 25565 forwarded for Minecraft. Don't forward BlueMap's port (8100): from now on the map goes through Caddy.
+3. On the Pi:
+   ```
+   cd ~/docker/meowcraft/tools/meowcraft-server-tools/caddy
+   cp .env.example .env && nano .env        # fill in your DuckDNS name and token
+   docker compose up -d
+   ```
+4. After a minute, open `https://<your name>.duckdns.org` and the map should load with a padlock.
+   If it doesn't, `docker compose logs caddy` says why (usually port 443 isn't forwarded yet).
+5. Put both addresses in `site/config.js` on GitHub. Friends now join Minecraft with `<your name>.duckdns.org`.
+
+Caddy renews the https certificate by itself. `git pull` + `docker compose up -d` picks up any changes to the setup.
 
 ## Notes
 - The tool prefers stable releases over betas, everywhere.
