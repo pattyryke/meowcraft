@@ -61,6 +61,12 @@ ACHIEVEMENTS = [
 CHAT_COLOR = {"fall": "red", "sneak": "dark_green", "nap": "aqua", "jump": "light_purple", "dirt": "gold", "drop": "yellow",
               "lives": "dark_red", "fish": "blue", "cake": "light_purple", "bred": "red", "creeper": "green",
               "trade": "dark_aqua", "puffer": "gold"}
+# The little tag shown in front of a player's name when they wear a title (/trigger title). Not bold.
+TAG = {"fall1": "☁", "fall2": "☄", "sneak1": "ʰᵉʰ", "sneak2": "✧ʰᵉʰ✧", "nap1": "ᶻᶻ", "nap2": "☾ᶻᶻᶻ",
+       "jump1": "⇡", "jump2": "ʙᴏɪɴɢ", "dirt1": "▪", "dirt2": "♛▪", "drop1": "ᵒᵒᵖˢ", "drop2": "ᵒᵒᵖˢ!",
+       "lives1": "☠", "lives2": "☠☠", "fish1": "><>", "fish2": "≋><>", "cake1": "ᶜᵃᵏᵉ", "cake2": "♚ᶜᵃᵏᵉ",
+       "bred1": "♡", "bred2": "♡♡", "creeper1": "✸", "creeper2": "ᵇᵒᵒᵐ", "trade1": "ʰᵐᵐ", "trade2": "ʰᵐᵐᵐᵐ",
+       "puffer1": "ᵇˡᵉʰ"}
 SECRET = {"puffer1"}   # shown as ??? in /trigger achievements until earned
 
 # Rewards: tier 1 (and the secret one) = 5 XP levels + 8 cookies. Tier 2 = 15 XP levels + a glowing trophy item.
@@ -88,7 +94,7 @@ for key, shown, raw, crit, label, col, unit in STATS:
     if raw:
         load.append(f"scoreboard objectives add {shown} dummy {j({'text': label, 'color': col, 'bold': True})}")
 load += ["", "# Helpers", "scoreboard objectives add mc_sys dummy", "scoreboard objectives add mystats trigger",
-         "scoreboard objectives add achievements trigger",
+         "scoreboard objectives add achievements trigger", "scoreboard objectives add title trigger",
          "scoreboard players set #100 mc_sys 100", "scoreboard players set #20 mc_sys 20", "scoreboard players set #6 mc_sys 6", "",
          "# --- Cute sidebar styling ---", "scoreboard players reset meow_footer", "scoreboard players reset meow_space_bottom"]
 icons = {"fall": "☁", "sneak": "✦", "nap": "☾", "jump": "❀", "dirt": "✿", "drop": "♥"}
@@ -104,6 +110,10 @@ load += ["", "# No sidebar - tab list shows blocks fallen", "scoreboard objectiv
          "scoreboard objectives setdisplay list mc_fall", "", "# Start the loops",
          "schedule function meowcraft:nap_check 5t replace", "schedule function meowcraft:update 1s replace",
          "schedule clear meowcraft:rotate"]
+load += ["", "# One team per title: its prefix shows above heads, in the Tab list and (via EssentialsChat {TEAMPREFIX}) in chat"]
+for aid, key, thr, title, *_ in ACHIEVEMENTS:
+    load += [f"team add mct_{aid}",
+             f"team modify mct_{aid} prefix " + j({"text": TAG[aid] + " ", "color": CHAT_COLOR[key], "bold": False})]
 put("data/meowcraft/function/load.mcfunction", load)
 
 # ---- update (every second) ----
@@ -121,7 +131,9 @@ put("data/meowcraft/function/update.mcfunction", [
     "scoreboard players enable @a mystats",
     "execute as @a[scores={mystats=1..}] run function meowcraft:mystats",
     "scoreboard players enable @a achievements",
-    "execute as @a[scores={achievements=1..}] run function meowcraft:achievements", "",
+    "execute as @a[scores={achievements=1..}] run function meowcraft:achievements",
+    "scoreboard players enable @a title",
+    "execute as @a[scores={title=1..}] run function meowcraft:title", "",
     "schedule function meowcraft:update 1s replace"])
 
 # ---- titles + rewards ----
@@ -147,7 +159,8 @@ for aid, key, thr, title, msg, trophy in ACHIEVEMENTS:
         what = f"{TIER1_XP} XP levels and 8 Meowcraft Treats"
     put(f"data/meowcraft/function/rewards/{aid}.mcfunction", [f"tag @s add mc_r_{aid}"] + give + [
         "tellraw @s " + j(["", {"text": "   Reward for ", "color": "gray"}, {"text": title, "color": CHAT_COLOR[key]},
-                            {"text": ": " + what + "!", "color": "gray"}]),
+                            {"text": ": " + what + "! ", "color": "gray"},
+                            {"text": "Wear it: /trigger title", "color": "dark_gray", "italic": True}]),
         "playsound minecraft:entity.player.levelup master @s ~ ~ ~ 1 1.4"])
 put("data/meowcraft/function/check_titles.mcfunction", check)
 put("data/meowcraft/function/check_rewards.mcfunction", rew)
@@ -167,9 +180,47 @@ for aid, key, thr, title, msg, trophy in ACHIEVEMENTS:
                 {"text": f"/{thr:,} {unit}", "color": "dark_gray"}]
     ach.append(f"execute if entity @s[tag=mc_t_{aid}] run tellraw @s {j(got)}")
     ach.append(f"execute unless entity @s[tag=mc_t_{aid}] run tellraw @s {j(todo)}")
-ach += ["tellraw @s " + j({"text": " Tier 1: 5 XP levels + treats. Tier 2: 15 XP levels + a glowing trophy.", "color": "dark_gray", "italic": True}),
+ach += ["tellraw @s " + j({"text": " Tier 1: 5 XP levels + treats. Tier 2: 15 XP levels + a glowing trophy. Wear a title: /trigger title", "color": "dark_gray", "italic": True}),
         "scoreboard players set @s achievements 0"]
 put("data/meowcraft/function/achievements.mcfunction", ach)
+
+# ---- /trigger title ----
+# /trigger title            -> menu of the titles you've earned (click one to wear it)
+# /trigger title set 100+N  -> wear title N (only if earned)       /trigger title set 99 -> no title
+put("data/meowcraft/function/title.mcfunction", [
+    "# Handles /trigger title",
+    "execute if score @s title matches 1..98 run function meowcraft:title_menu",
+    "execute if score @s title matches 99 run function meowcraft:title_clear",
+    "execute if score @s title matches 100.. run function meowcraft:title_pick",
+    "scoreboard players set @s title 0"])
+menu = ["# Clickable list of the titles this player has earned",
+        "tellraw @s " + j(["", {"text": "=^.^= Pick a title to wear =^.^=", "color": "#B9A3FF"}])]
+for n, (aid, key, thr, title, *_ ) in enumerate(ACHIEVEMENTS):
+    line = ["", {"text": " ▶ ", "color": "dark_gray"},
+            {"text": TAG[aid] + "  " + title, "color": CHAT_COLOR[key],
+             "click_event": {"action": "run_command", "command": f"/trigger title set {100 + n}"},
+             "hover_event": {"action": "show_text", "value": "Click to wear this title"}}]
+    menu.append(f"execute if entity @s[tag=mc_t_{aid}] run tellraw @s {j(line)}")
+none_earned = "execute " + " ".join(f"unless entity @s[tag=mc_t_{a[0]}]" for a in ACHIEVEMENTS)
+menu.append(none_earned + " run tellraw @s " + j({"text": " You haven't earned any titles yet. See them all: /trigger achievements", "color": "gray"}))
+menu.append("tellraw @s " + j(["", {"text": " ▶ ", "color": "dark_gray"},
+            {"text": "[No title]", "color": "gray", "click_event": {"action": "run_command", "command": "/trigger title set 99"},
+             "hover_event": {"action": "show_text", "value": "Click to take your title off"}}]))
+put("data/meowcraft/function/title_menu.mcfunction", menu)
+pick = ["# Wear title number (score - 100), but only if it has been earned"]
+for n, (aid, key, thr, title, *_ ) in enumerate(ACHIEVEMENTS):
+    pick.append(f"execute if score @s title matches {100 + n} if entity @s[tag=mc_t_{aid}] run function meowcraft:title_set/{aid}")
+    pick.append(f"execute if score @s title matches {100 + n} unless entity @s[tag=mc_t_{aid}] run tellraw @s " +
+                j({"text": "You haven't earned that title yet. See your progress: /trigger achievements", "color": "gray"}))
+    put(f"data/meowcraft/function/title_set/{aid}.mcfunction", [
+        f"team join mct_{aid} @s",
+        "tellraw @s " + j(["", {"text": "Now wearing ", "color": "gray"}, {"text": TAG[aid] + " " + title, "color": CHAT_COLOR[key]},
+                           {"text": " =^.^=", "color": "#B9A3FF"}]),
+        "playsound minecraft:entity.cat.ambient master @s ~ ~ ~ 1 1.2"])
+put("data/meowcraft/function/title_pick.mcfunction", pick)
+put("data/meowcraft/function/title_clear.mcfunction", [
+    "team leave @s",
+    "tellraw @s " + j({"text": "Title taken off.", "color": "gray"})])
 
 # ---- /trigger mystats ----
 ms = ["# Private stat card for whoever ran /trigger mystats",
@@ -178,7 +229,7 @@ for key, shown, raw, crit, label, col, unit in STATS:
     if key == "puffer":
         continue
     ms.append("tellraw @s " + j(["", {"text": f" {label}: ", "color": col}, {"score": {"name": "@s", "objective": shown}}, {"text": f" {unit}", "color": "gray"}]))
-ms += ["tellraw @s " + j({"text": " See every achievement: /trigger achievements", "color": "dark_gray", "italic": True}),
+ms += ["tellraw @s " + j({"text": " See every achievement: /trigger achievements   Wear a title: /trigger title", "color": "dark_gray", "italic": True}),
        "scoreboard players set @s mystats 0"]
 put("data/meowcraft/function/mystats.mcfunction", ms)
 
@@ -188,7 +239,9 @@ un = ["# Removes everything this datapack added. Run, then: datapack disable \"f
 for key, shown, raw, *_ in STATS:
     if raw: un.append(f"scoreboard objectives remove {raw}")
     un.append(f"scoreboard objectives remove {shown}")
-un += ["scoreboard objectives remove mc_sys", "scoreboard objectives remove mystats", "scoreboard objectives remove achievements"]
+un += ["scoreboard objectives remove mc_sys", "scoreboard objectives remove mystats", "scoreboard objectives remove achievements",
+       "scoreboard objectives remove title"]
+un += [f"team remove mct_{a[0]}" for a in ACHIEVEMENTS]
 for aid, *_ in ACHIEVEMENTS:
     un += [f"tag @a remove mc_t_{aid}", f"tag @a remove mc_r_{aid}"]
 put("data/meowcraft/function/uninstall.mcfunction", un)
