@@ -1,6 +1,6 @@
 // Meowcraft website. Reads meowcraft.json, the latest release, Modrinth and the server status live.
 (() => {
-  const C = Object.assign({ repo: "pattyryke/meowcraft", server: "" }, window.MEOWCRAFT || {});
+  const C = Object.assign({ repo: "pattyryke/meowcraft", server: "", map: "" }, window.MEOWCRAFT || {});
   const RAW = `https://raw.githubusercontent.com/${C.repo}/main`;
   const $ = (id) => document.getElementById(id);
   const el = (tag, props = {}, kids = []) => {
@@ -83,6 +83,14 @@
       buttons.forEach((b) => { b.classList.add("disabled"); b.removeAttribute("href"); b.textContent = "Pack file coming soon"; });
     }
   })();
+
+  // ---------- Live map (squaremap, hosted on Cloudflare R2) ----------
+  if (C.map) {
+    $("map-wrap").append(el("iframe", { src: C.map, title: "Meowcraft live map", loading: "lazy", allow: "fullscreen" }));
+    $("map-open").href = C.map;
+    $("map").hidden = false;
+    document.querySelectorAll("[data-map-link]").forEach((a) => { a.hidden = false; });
+  }
 
   // ---------- What's inside (meowcraft.json + Modrinth) ----------
   const PERKS = {

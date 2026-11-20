@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Meowcraft</title>
-  <meta name="description" content="The Meowcraft Minecraft server: one-line setup, pack downloads, server status and everything in the pack.">
+  <meta name="description" content="The Meowcraft Minecraft server: one-line setup, pack downloads, server status, the live map and everything in the pack.">
   <meta property="og:title" content="Meowcraft =^.^=">
   <meta property="og:description" content="Meow meow. Meow... Meowcraft. Set up in one line, then just click the cat.">
   <meta property="og:image" content="cat-256.png">
@@ -21,6 +21,7 @@
     <nav>
       <a href="#join">Join</a>
       <a href="#downloads">Downloads</a>
+      <a href="#map" data-map-link hidden>Map</a>
       <a href="#inside">What's inside</a>
       <a href="#help">Help</a>
     </nav>
@@ -46,6 +47,7 @@
         <div class="cta">
           <a class="btn primary" href="#join">Get set up</a>
           <a class="btn" href="#downloads">Downloads</a>
+          <a class="btn" href="#map" data-map-link hidden>See the map</a>
         </div>
       </div>
     </section>
@@ -112,6 +114,15 @@
         </article>
       </div>
       <p class="note" id="dl-note">The one-line setup asks which one you want, and you can switch any time with <code>meowcraft switch normal</code> / <code>fancy</code>. The .mrpack files are only for other launchers.</p>
+    </section>
+
+    <section id="map" hidden>
+      <h2>Live map <small>player dots update about every 15 seconds</small></h2>
+      <div class="map-wrap" id="map-wrap"></div>
+      <div class="map-foot">
+        <span class="note">Scroll or pinch to zoom, drag to move. Switch between the Overworld, Nether and End in the map's menu.</span>
+        <a class="btn" id="map-open" target="_blank" rel="noopener">Open the full map ↗</a>
+      </div>
     </section>
 
     <section id="inside">

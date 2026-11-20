@@ -125,9 +125,25 @@ After that, from anywhere:
 
 ## The website
 
-**https://pattyryke.github.io/meowcraft/** has the setup steps, the pack downloads, whether the server is online and everything in the pack.
+**https://pattyryke.github.io/meowcraft/** has the setup steps, the pack downloads, whether the server is online, the live map and everything in the pack.
 It reads `meowcraft.json` and the Releases page by itself, so update night doesn't involve it at all.
-The only thing to edit is `site/config.js`: the server address.
+The only thing to edit is `site/config.js`: the server address and the map address.
+
+## The live map (squaremap)
+
+The map on the website is made by the **squaremap** server plugin and hosted on Cloudflare R2, so nobody on the internet
+ever connects to the Pi: no router ports are opened for it.
+
+- squaremap writes the map into `plugins/squaremap/web` on the server (its own web server is turned off).
+- `~/docker/meowcraft/map-sync` (a small Docker container on the Pi) uploads that folder to the `meowcraft-map` bucket:
+  player positions every 15 seconds, map images every 10 minutes, only what changed.
+- The R2 keys are in `~/.config/meowcraft-r2` on the Pi (never in this repo).
+- The website shows `https://pub-ee528d8f1d2348e9acaf0352f1584f29.r2.dev/index.html`.
+
+Handy:
+- Is it uploading? `docker logs --tail 20 meowcraft-map-sync`
+- Redraw a whole dimension (in the Crafty console): `map fullrender minecraft:overworld` (or `minecraft:the_nether`, `minecraft:the_end`)
+- Turn it off: `cd ~/docker/meowcraft/map-sync && docker compose down`
 
 ## Notes
 - The tool prefers stable releases over betas, everywhere.
