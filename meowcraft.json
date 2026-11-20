@@ -1,6 +1,6 @@
 {
   "minecraft": "26.3",
-  "pack": 2,
+  "pack": 3,
 
   "client": {
     "core": {
@@ -17,7 +17,9 @@
         "zoomify",
         "simple-voice-chat",
         "emotecraft",
-        "clientsort"
+        "clientsort",
+        "sound-physics-remastered",
+        "simple-voice-animations"
       ],
       "resourcepacks": [],
       "shaders": []
