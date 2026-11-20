@@ -1,0 +1,41 @@
+# Builds the pack downloads (Meowcraft-Normal.mrpack and Meowcraft-Fancy.mrpack) every time
+# meowcraft.json changes on main, and puts them on the Releases page as "Meowcraft pack <N>".
+# The website links to releases/latest, so it always offers the newest pack.
+# Rebuilding the same pack number just replaces its files (handy when a mod gets a fix).
+name: Build the pack downloads
+on:
+  push:
+    branches: [main]
+    paths: ["meowcraft.json", "meowcraft-tools/servers.dat", ".github/scripts/build-mrpack.py", ".github/workflows/build-packs.yml"]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: build-packs
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the .mrpack files
+        run: python3 .github/scripts/build-mrpack.py --out dist
+      - name: Publish them as a release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PACK=$(python3 -c "import json; print(json.load(open('dist/pack-info.json'))['pack'])")
+          MC=$(python3 -c "import json; print(json.load(open('dist/pack-info.json'))['minecraft'])")
+          TAG="pack-$PACK"
+          NOTES="Minecraft $MC with Fabric. Import a file into the Modrinth App, Prism Launcher or ATLauncher (File > Add instance / Import).
+
+          - **Meowcraft-Normal.mrpack**: fast and smooth on any computer.
+          - **Meowcraft-Fancy.mrpack**: shaders and smoother animations. Needs a powerful computer.
+
+          Using the official Minecraft Launcher? Use the one-line setup in the README instead."
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/*.mrpack dist/pack-info.json --clobber
+            gh release edit "$TAG" --latest
+          else
+            gh release create "$TAG" dist/*.mrpack dist/pack-info.json --title "Meowcraft pack $PACK" --notes "$NOTES" --latest --target "$GITHUB_SHA"
+          fi

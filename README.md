@@ -9,6 +9,7 @@ The master list for the Meowcraft server: every client mod, resource pack, shade
 | `meowcraft-tools/servers.dat` | The server list friends start with (just the Meowcraft server). |
 | `meowcraft-server-tools/meowcraft.py` | The `meowcraft` command for the Pi: checks and updates server plugins. |
 | `meowcraft-server-tools/datapacks/` | Backup copy of the silly stats datapack. |
+| `.github/scripts/build-mrpack.py` | Builds the `.mrpack` downloads for the Releases page (GitHub runs it for you). |
 
 ## For friends: setting up Meowcraft (once)
 
@@ -26,6 +27,13 @@ curl -fsSL https://raw.githubusercontent.com/pattyryke/meowcraft/main/meowcraft-
 
 It asks Normal or Fancy, installs everything, and adds a cat **Play Meowcraft** icon (Windows: desktop, Mac: Dock).
 **From then on, always start Minecraft with that icon.** It grabs any new mods in a few seconds, then opens the Launcher.
+
+### Using another launcher instead (Modrinth App, Prism, ATLauncher)
+
+Download **Meowcraft-Normal.mrpack** or **Meowcraft-Fancy.mrpack** from the newest
+[release](https://github.com/pattyryke/meowcraft/releases/latest) and import it in your launcher.
+GitHub rebuilds them by itself every time `meowcraft.json` changes. These don't auto-update like the icon does:
+when the pack number goes up, import the new file again (or use your launcher's "update modpack" button).
 
 ### The meowcraft command
 
