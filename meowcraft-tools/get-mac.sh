@@ -5,6 +5,8 @@
 set -e
 mkdir -p "$HOME/.meowcraft"
 echo "  =^.^=  Downloading Meowcraft..."
-curl -fsSL https://raw.githubusercontent.com/pattyryke/meowcraft/main/meowcraft-tools/meowcraft-mac -o "$HOME/.meowcraft/meowcraft"
+# The command comes from the "stable" branch (falls back to main until that branch exists)
+curl -fsSL https://raw.githubusercontent.com/pattyryke/meowcraft/stable/meowcraft-tools/meowcraft-mac -o "$HOME/.meowcraft/meowcraft" ||
+  curl -fsSL https://raw.githubusercontent.com/pattyryke/meowcraft/main/meowcraft-tools/meowcraft-mac -o "$HOME/.meowcraft/meowcraft"
 chmod +x "$HOME/.meowcraft/meowcraft"
 "$HOME/.meowcraft/meowcraft" install

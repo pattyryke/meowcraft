@@ -136,6 +136,8 @@ def plugin_latest(p, mc):
         return github_latest(p["repo"], p.get("asset", r"\.jar$"))
     if src == "hangar":
         return hangar_latest(p["project"], mc)
+    if src == "manual":   # a jar you look after yourself (like a custom build): tracked, never downloaded
+        return {"manual": True}
     return {"error": f"unknown source '{src}'"}
 
 # ---------- commands ----------
@@ -156,6 +158,8 @@ def plugin_report(manifest, plugins_dir):
             status = ("noversion", f"no build for {mc} yet")
         elif "error" in latest:
             status = ("error", latest["error"])
+        elif latest.get("manual"):
+            status = ("manual", "you update this one yourself" if installed else "not installed - add the jar yourself")
         elif not installed:
             status = ("missing", "not installed")
         elif latest["file"] in installed:
@@ -171,14 +175,14 @@ def plugin_report(manifest, plugins_dir):
 def print_report(mc, rows, untracked):
     print(color(f"\n  =^.^=  Meowcraft plugins for Minecraft {mc}\n", PINK))
     icons = {"ok": ("✓", GREEN), "update": ("⬆", YELLOW), "missing": ("+", YELLOW),
-             "noversion": ("…", GRAY), "error": ("!", RED)}
+             "noversion": ("…", GRAY), "error": ("!", RED), "manual": ("•", GRAY)}
     for r in rows:
         kind, text = r["status"]
         icon, c = icons[kind]
         inst = ", ".join(r["installed"]) or "-"
         print(color(f"  {icon} {r['plugin']['name']}", c) + color(f"  ({text})", c))
         print(color(f"      installed: {inst}", GRAY))
-        if r["latest"] and "error" not in r["latest"]:
+        if r["latest"] and "error" not in r["latest"] and not r["latest"].get("manual"):
             extra = f"   [{r['latest']['note']}]" if r["latest"].get("note") else ""
             print(color(f"      newest:    {r['latest']['file']}{extra}", GRAY))
     if untracked:
@@ -262,6 +266,9 @@ def cmd_ready(args, manifest):
     print(color("  Server plugins", PINK))
     for p in manifest["server"]["plugins"]:
         r = plugin_latest(p, mc)
+        if r and r.get("manual"):
+            line(False, p["name"], "you look after this one yourself - check it before updating")
+            continue
         ok = bool(r) and "error" not in r
         detail = r["note"] if ok and r.get("note") else ""
         line(ok, p["name"], detail)

@@ -33,8 +33,8 @@ jobs:
           for sec in ("core", "fancy"):
               if not isinstance(m.get("client", {}).get(sec, {}).get("mods", []), list): problems.append(f"client.{sec}.mods should be a list")
           for p in m.get("server", {}).get("plugins", []):
-              need = {"modrinth": ["project"], "hangar": ["project"], "github": ["repo"]}.get(p.get("source"))
-              if need is None: problems.append(f'{p.get("name", "?")}: "source" should be modrinth, hangar or github')
+              need = {"modrinth": ["project"], "hangar": ["project"], "github": ["repo"], "manual": []}.get(p.get("source"))
+              if need is None: problems.append(f'{p.get("name", "?")}: "source" should be modrinth, hangar, github or manual')
               else:
                   for k in need + ["name", "jar"]:
                       if not p.get(k): problems.append(f'{p.get("name", "?")}: missing "{k}"')

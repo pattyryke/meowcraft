@@ -1,0 +1,71 @@
+# Tests the meowcraft command for Windows and Mac every time one of them changes.
+# A red X on the commit means friends would get a broken command - fix it before moving "stable".
+name: Test the meowcraft command
+on:
+  push:
+    paths: ["meowcraft-tools/**", ".github/workflows/test-tools.yml"]
+  pull_request:
+    paths: ["meowcraft-tools/**", ".github/workflows/test-tools.yml"]
+  workflow_dispatch:
+env:
+  # Test the files from this exact commit, not what's on main
+  MEOWCRAFT_REPO_RAW: https://raw.githubusercontent.com/${{ github.repository }}/${{ github.event.pull_request.head.sha || github.sha }}
+  MEOWCRAFT_TOOL_RAW: https://raw.githubusercontent.com/${{ github.repository }}/${{ github.event.pull_request.head.sha || github.sha }}
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Plain ASCII? (Windows PowerShell 5.1 misreads anything else)
+        shell: bash
+        run: |
+          if grep -nP '[^\x00-\x7F]' meowcraft-tools/*.ps1; then echo "::error::Non-ASCII characters in the lines above"; exit 1; fi
+      - name: Does it parse in Windows PowerShell 5.1 (what friends have)?
+        shell: powershell
+        run: |
+          $bad = $false
+          foreach ($f in Get-ChildItem meowcraft-tools\*.ps1) {
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($f.FullName, [ref]$null, [ref]$errors) | Out-Null
+            foreach ($e in $errors) { Write-Host "::error file=meowcraft-tools/$($f.Name),line=$($e.Extent.StartLineNumber)::$($e.Message)"; $bad = $true }
+          }
+          if ($bad) { exit 1 }
+      - name: PSScriptAnalyzer (errors only)
+        shell: powershell
+        run: |
+          Install-Module PSScriptAnalyzer -Force -Scope CurrentUser
+          $r = Invoke-ScriptAnalyzer -Path meowcraft-tools -Severity Error
+          $r | Format-Table -AutoSize
+          if ($r) { exit 1 }
+      - name: Test install (Normal)
+        shell: powershell
+        run: |
+          $mc = Join-Path $env:APPDATA '.minecraft'
+          New-Item -ItemType Directory -Force $mc | Out-Null
+          '{"profiles":{}}' | Set-Content (Join-Path $mc 'launcher_profiles.json')
+          powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File meowcraft-tools\meowcraft-windows.ps1 install --normal --no_pause
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          $mods = @(Get-ChildItem (Join-Path $mc 'meowcraft\mods') -Filter *.jar)
+          Write-Host "$($mods.Count) mods installed"
+          if ($mods.Count -lt 5) { Write-Host '::error::Too few mods installed'; exit 1 }
+          if (-not (Test-Path (Join-Path $mc 'meowcraft\servers.dat'))) { Write-Host '::error::No server list'; exit 1 }
+          if (-not (Test-Path "$HOME\.meowcraft\meowcraft.cmd")) { Write-Host '::error::meowcraft.cmd missing'; exit 1 }
+
+  mac:
+    # The Mac command has a test mode that runs under Node.js, so this runs on Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test install (Normal), then repair a damaged mod
+        run: |
+          export HOME="$RUNNER_TEMP/home"
+          mc="$HOME/Library/Application Support/minecraft"
+          mkdir -p "$mc" && echo '{"profiles":{}}' > "$mc/launcher_profiles.json"
+          node meowcraft-tools/meowcraft-mac install --normal
+          n=$(ls "$mc/meowcraft/mods"/*.jar | wc -l); echo "$n mods installed"
+          [ "$n" -ge 5 ] || { echo "::error::Too few mods installed"; exit 1; }
+          [ -f "$mc/meowcraft/servers.dat" ] || { echo "::error::No server list"; exit 1; }
+          victim=$(ls "$mc/meowcraft/mods"/*.jar | head -1)
+          echo garbage > "$victim"
+          node meowcraft-tools/meowcraft-mac update
+          [ "$(stat -c %s "$victim")" -gt 100 ] || { echo "::error::Damaged mod wasn't repaired"; exit 1; }

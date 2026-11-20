@@ -1,6 +1,6 @@
 {
   "minecraft": "26.3",
-  "pack": 2,
+  "pack": 3,
 
   "client": {
     "core": {
@@ -17,7 +17,9 @@
         "zoomify",
         "simple-voice-chat",
         "emotecraft",
-        "clientsort"
+        "clientsort",
+        "sound-physics-remastered",
+        "simple-voice-animations"
       ],
       "resourcepacks": [],
       "shaders": []
@@ -39,11 +41,11 @@
     "software": "Purpur",
     "plugins": [
       { "name": "LuckPerms",               "source": "modrinth", "project": "luckperms",          "jar": "^LuckPerms" },
-      { "name": "EssentialsX",             "source": "github",   "repo": "EssentialsX/Essentials", "asset": "^EssentialsX-[0-9].*\\.jar$",      "jar": "^EssentialsX-[0-9]" },
-      { "name": "EssentialsXChat",         "source": "github",   "repo": "EssentialsX/Essentials", "asset": "^EssentialsXChat-.*\\.jar$",      "jar": "^EssentialsXChat" },
-      { "name": "EssentialsXSpawn",        "source": "github",   "repo": "EssentialsX/Essentials", "asset": "^EssentialsXSpawn-.*\\.jar$",     "jar": "^EssentialsXSpawn" },
+      { "name": "EssentialsX",             "source": "manual",   "notes": "Dev build 2.22.1-dev from ci.ender.zone (2.22.0 doesn't support 26.3). Once 2.22.1 is released, switch back to: \"source\": \"github\", \"repo\": \"EssentialsX/Essentials\", \"asset\": \"^EssentialsX-[0-9].*\\\\.jar$\"", "jar": "^EssentialsX-[0-9]" },
+      { "name": "EssentialsXChat",         "source": "manual",   "notes": "Same as EssentialsX. github asset: ^EssentialsXChat-.*\\\\.jar$", "jar": "^EssentialsXChat" },
+      { "name": "EssentialsXSpawn",        "source": "manual",   "notes": "Same as EssentialsX. github asset: ^EssentialsXSpawn-.*\\\\.jar$", "jar": "^EssentialsXSpawn" },
       { "name": "Chunky",                  "source": "modrinth", "project": "chunky",             "jar": "^Chunky" },
-      { "name": "BlueMap",                 "source": "modrinth", "project": "bluemap",            "jar": "^bluemap" },
+      { "name": "BlueMap",                 "source": "modrinth", "project": "bluemap",            "jar": "^bluemap-[0-9]" },
       { "name": "BlueMapFilteredEntities", "source": "github",   "repo": "TechnicJelle/BlueMapFilteredEntities", "asset": "\\.jar$", "jar": "^BlueMapFilteredEntities" },
       { "name": "Simple Voice Chat",       "source": "modrinth", "project": "simple-voice-chat",  "jar": "^voicechat" },
       { "name": "FetchPets",               "source": "modrinth", "project": "fetchpets",          "jar": "^fetchpets" },
@@ -51,7 +53,8 @@
       { "name": "Emotecraft",              "source": "modrinth", "project": "emotecraft",         "jar": "^emotecraft" },
       { "name": "ModularPacks",            "source": "modrinth", "project": "modularpacks",       "jar": "^ModularPacks" },
       { "name": "GravesX",                 "source": "modrinth", "project": "gravesx",            "jar": "^GravesX" },
-      { "name": "Timberella",              "source": "hangar",   "project": "timberella",         "jar": "^timberella" }
+      { "name": "Timberella",              "source": "hangar",   "project": "timberella",         "jar": "^timberella" },
+      { "name": "Vault",                   "source": "github",   "repo": "MilkBowl/Vault", "asset": "^Vault\\.jar$", "jar": "^Vault[-.]" }
     ],
     "datapacks": [
       { "name": "Meowcraft Silly Stats", "source": "custom", "file": "meowcraft_stats.zip", "notes": "Copy of meowcraft-server-tools/datapacks/meowcraft_stats.zip in this repo - goes in world/datapacks" }
