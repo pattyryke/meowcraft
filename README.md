@@ -8,7 +8,7 @@ The master list for the Meowcraft server: every client mod, resource pack, shade
 | `meowcraft-tools/` | The `meowcraft` command for friends' computers (Windows + Mac), plus the one-line setups. |
 | `meowcraft-tools/servers.dat` | The server list friends start with (just the Meowcraft server). |
 | `meowcraft-server-tools/meowcraft.py` | The `meowcraft` command for the Pi: checks and updates server plugins. |
-| `meowcraft-server-tools/datapacks/` | Backup copy of the silly stats datapack. |
+| `meowcraft-server-tools/datapacks/` | The silly stats datapack: `build_stats.py` lists every stat, achievement and reward and builds `meowcraft_stats.zip`. |
 | `site/` | The website (pattyryke.github.io/meowcraft). The only file to edit is `site/config.js`. |
 | `.github/scripts/build-mrpack.py` | Builds the `.mrpack` downloads for the Releases page (GitHub runs it for you). |
 
