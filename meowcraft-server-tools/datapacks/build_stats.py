@@ -193,19 +193,26 @@ put("data/meowcraft/function/title.mcfunction", [
     "execute if score @s title matches 99 run function meowcraft:title_clear",
     "execute if score @s title matches 100.. run function meowcraft:title_pick",
     "scoreboard players set @s title 0"])
-menu = ["# Clickable list of the titles this player has earned",
-        "tellraw @s " + j(["", {"text": "=^.^= Pick a title to wear =^.^=", "color": "#B9A3FF"}])]
+# The menu is a pop-up window (a Minecraft "dialog") with one button per earned title, so nobody has to open chat.
+# Buttons are collected per player in storage, then shown with a macro function.
+def snbt(text):
+    return json.dumps(text, ensure_ascii=False)
+menu = ["# Pop-up window with a button for each title this player has earned",
+        "data modify storage meowcraft:title actions set value []"]
 for n, (aid, key, thr, title, *_ ) in enumerate(ACHIEVEMENTS):
-    line = ["", {"text": " ▶ ", "color": "dark_gray"},
-            {"text": TAG[aid] + "  " + title, "color": CHAT_COLOR[key],
-             "click_event": {"action": "run_command", "command": f"/trigger title set {100 + n}"},
-             "hover_event": {"action": "show_text", "value": "Click to wear this title"}}]
-    menu.append(f"execute if entity @s[tag=mc_t_{aid}] run tellraw @s {j(line)}")
+    btn = ('{label:{text:%s,color:"%s"},tooltip:{text:"Wear this title"},width:200,'
+           'action:{type:"run_command",command:"trigger title set %d"}}') % (snbt(TAG[aid] + "  " + title), CHAT_COLOR[key], 100 + n)
+    menu.append(f"execute if entity @s[tag=mc_t_{aid}] run data modify storage meowcraft:title actions append value {btn}")
+menu.append('data modify storage meowcraft:title actions append value {label:{text:"No title",color:"gray"},tooltip:{text:"Take your title off"},width:200,action:{type:"run_command",command:"trigger title set 99"}}')
 none_earned = "execute " + " ".join(f"unless entity @s[tag=mc_t_{a[0]}]" for a in ACHIEVEMENTS)
-menu.append(none_earned + " run tellraw @s " + j({"text": " You haven't earned any titles yet. See them all: /trigger achievements", "color": "gray"}))
-menu.append("tellraw @s " + j(["", {"text": " ▶ ", "color": "dark_gray"},
-            {"text": "[No title]", "color": "gray", "click_event": {"action": "run_command", "command": "/trigger title set 99"},
-             "hover_event": {"action": "show_text", "value": "Click to take your title off"}}]))
+menu.append("data modify storage meowcraft:title body set value " + snbt("Click a title to wear it in front of your name."))
+menu.append(none_earned + " run data modify storage meowcraft:title body set value " + snbt("You haven't earned any titles yet! See them all with /trigger achievements"))
+menu.append("function meowcraft:title_window with storage meowcraft:title")
+put("data/meowcraft/function/title_window.mcfunction", [
+    "# Macro: shows the title window built by title_menu",
+    '$dialog show @s {type:"minecraft:multi_action",title:{text:"=^.^= Pick a title =^.^=",color:"#B9A3FF"},'
+    'body:{type:"minecraft:plain_message",contents:{text:"$(body)"}},actions:$(actions),columns:1,'
+    'exit_action:{label:{text:"Close"}}}'])
 put("data/meowcraft/function/title_menu.mcfunction", menu)
 pick = ["# Wear title number (score - 100), but only if it has been earned"]
 for n, (aid, key, thr, title, *_ ) in enumerate(ACHIEVEMENTS):
