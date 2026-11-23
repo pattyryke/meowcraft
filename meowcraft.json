@@ -50,6 +50,7 @@
       { "name": "EssentialsXChat",         "source": "manual",   "notes": "Same as EssentialsX. github asset: ^EssentialsXChat-.*\\\\.jar$", "jar": "^EssentialsXChat" },
       { "name": "EssentialsXSpawn",        "source": "manual",   "notes": "Same as EssentialsX. github asset: ^EssentialsXSpawn-.*\\\\.jar$", "jar": "^EssentialsXSpawn" },
       { "name": "squaremap",               "source": "modrinth", "project": "squaremap",          "jar": "^squaremap" },
+      { "name": "CarryOnPaper",            "source": "modrinth", "project": "carryonpaper",       "jar": "^CarryOnPaper" },
       { "name": "Chunky",                  "source": "modrinth", "project": "chunky",             "jar": "^Chunky" },
       { "name": "Simple Voice Chat",       "source": "modrinth", "project": "simple-voice-chat",  "jar": "^voicechat-bukkit" },
       { "name": "FetchPets",               "source": "modrinth", "project": "fetchpets",          "jar": "^fetchpets" },
