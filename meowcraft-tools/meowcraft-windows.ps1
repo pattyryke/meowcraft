@@ -14,7 +14,7 @@ $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'   # makes downloads much faster in Windows PowerShell
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-$ToolVersion = '3.2'
+$ToolVersion = '3.3'
 $RepoRaw = 'https://raw.githubusercontent.com/pattyryke/meowcraft/main'     # the mod list + small files
 $ToolRaw = 'https://raw.githubusercontent.com/pattyryke/meowcraft/stable'   # this command: only updates when "stable" moves
 if ($env:MEOWCRAFT_REPO_RAW) { $RepoRaw = $env:MEOWCRAFT_REPO_RAW }   # for the GitHub tests
@@ -256,6 +256,8 @@ function Invoke-Sync([switch]$Quick) {
         }
         if ($man.minecraft) { $script:McVersion = $man.minecraft }
         if ($man.pack) { $pack = $man.pack }
+        # Every resource pack in any version is ours, so switching versions removes the ones you no longer get
+        foreach ($sp in $man.client.PSObject.Properties) { foreach ($p in $sp.Value.resourcepacks) { if ($script:KnownPacks -notcontains $p) { $script:KnownPacks += $p } } }
     } else { Warn "Couldn't read the online mod list - using the built-in one" }
     $packText = ''; if ($pack) { $packText = " $Dot pack $pack" }
     Say "$(Variant-Name $variant) version, Minecraft $McVersion$packText"
@@ -359,7 +361,7 @@ function Invoke-Sync([switch]$Quick) {
 
     # 4. Resource packs
     New-Item -ItemType Directory -Force -Path $PackDir | Out-Null
-    foreach ($rp in $KnownPacks) {
+    foreach ($rp in $script:KnownPacks) {
         if ($packs -notcontains $rp) {
             $pf = Join-Path $PackDir "$rp.zip"
             if (Test-Path $pf) { Remove-Item -Force $pf; Set-PackEnabled "$rp.zip" $false; Say "Removed resource pack $rp" }

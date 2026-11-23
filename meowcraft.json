@@ -1,6 +1,6 @@
 {
   "minecraft": "26.3",
-  "pack": 3,
+  "pack": 4,
 
   "client": {
     "core": {
@@ -19,15 +19,20 @@
         "emotecraft",
         "clientsort",
         "sound-physics-remastered",
-        "simple-voice-animations"
+        "simple-voice-animations",
+        "not-enough-animations",
+        "3dskinlayers",
+        "fallingleaves",
+        "itemphysic-lite",
+        "item-highlighter"
       ],
       "resourcepacks": [],
       "shaders": []
     },
     "fancy": {
       "extends": "core",
-      "mods": ["iris", "entity-model-features", "entitytexturefeatures"],
-      "resourcepacks": ["fresh-animations"],
+      "mods": ["iris", "entity-model-features", "entitytexturefeatures", "visuality", "not-enough-animations-emf-compat"],
+      "resourcepacks": ["fresh-animations", "fresh-animations-extensions"],
       "shaders": [
         { "project": "HVnmMxH1", "name": "Complementary Reimagined", "file": "Meowcraft High - Complementary Reimagined.zip" },
         { "project": "Q1vvjJYV", "name": "BSL", "file": "Meowcraft Medium - BSL.zip" },

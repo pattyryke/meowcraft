@@ -11,7 +11,7 @@
 //
 // Lives in ~/.meowcraft/meowcraft. Written in JavaScript for macOS (JXA), so it needs nothing installed.
 
-const TOOL_VERSION = '3.2';
+const TOOL_VERSION = '3.3';
 const IS_NODE = typeof process !== 'undefined' && !!(process.versions && process.versions.node);   // only for testing
 if (!IS_NODE) { ObjC.import('Foundation'); ObjC.import('stdlib'); }
 
@@ -209,6 +209,8 @@ function sync(quick) {
     });
     if (man.minecraft) MC_VERSION = man.minecraft;
     if (man.pack) pack = man.pack;
+    // Every resource pack in any version is ours, so switching versions removes the ones you no longer get
+    Object.keys(man.client).forEach(k => ((man.client[k] || {}).resourcepacks || []).forEach(p => { if (KNOWN_PACKS.indexOf(p) < 0) KNOWN_PACKS.push(p); }));
   } else warn("Couldn't read the online mod list - using the built-in one");
   const packText = pack ? ' · pack ' + pack : '';
   say(variantName(variant) + ' version, Minecraft ' + MC_VERSION + packText);
