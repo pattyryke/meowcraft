@@ -1,7 +1,7 @@
 &d=^.^= &fWelcome to Meowcraft, {PLAYER}&f! &d=^.^=
 &7▸ &fWear a title: &d/trigger title &7· all achievements: &d/trigger achievements &7· stats: &d/trigger mystats
 &7▸ &fVoice chat: hold &dCaps Lock&f to talk, &dV&f for settings. Sculk and the Warden can hear you!
-&7▸ &fAxe the bottom log and the whole tree falls &7(and replants)
+&7▸ &fChop a tree with a stone axe or better and the whole thing falls &7(sneak to chop just one log)
 &7▸ &fSneak + right-click a chest or mob with an empty hand to &dpick it up&f and carry it
 &7▸ &fCraft a backpack &7(&d/backpack&7) · bring your pets: &d/fetchpets &7· sort: &d/sort
 &7▸ &fLive map + help: &dpattyryke.github.io/meowcraft
